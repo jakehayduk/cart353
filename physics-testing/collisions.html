@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Collisions</title>
+
+    <style>
+        canvas {
+            display: block;
+            border-radius: 20px;
+            background: #0f1219;
+            width: min(96vw, 96vh);
+            height: min(96vw, 96vh);
+            max-width: 800px;
+            max-height: 800px;
+            cursor: crosshair;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="particleCanvas"></canvas>
+    <script>
+        (function() {
+
+            const canvas = document.getElementById('particleCanvas');
+
+            canvas.width = canvas.clientWidth;
+            canvas.height = canvas.clientHeight;
+
+            const context = canvas.getContext('2d');
+
+            const gravity = 0;
+
+            const rand = (min, max) => Math.random() * (max - min) + min;
+
+            let particles = [];
+
+            let mouseX;
+            let mouseY;
+            let mouseX2;
+            let mouseY2;
+            let mouseVX;
+            let mouseVY;
+            
+            canvas.addEventListener('mousemove', (e) => {
+                
+                mouseX2 = mouseX;
+                mouseY2 = mouseY;
+
+                mouseX = e.offsetX;
+                mouseY = e.offsetY;
+
+                mouseVX = mouseX - mouseX2;
+                mouseVY = mouseY - mouseY2;
+            })
+
+            const points = [
+                {x:100, y:50},
+                {x:200, y:20},
+                {x:250, y:130},
+                {x:150, y:200},
+                {x:50, y:120}
+            ]
+
+            function draw() {
+                context.clearRect(0,0,canvas.width, canvas.height);
+
+                context.beginPath();
+                context.moveTo(points[0].x, points[0].y);
+
+                for (let i = 1; i < points.length; i++) {
+                    context.lineTo(points[i].x, points[i].y);
+                }
+
+                context.closePath();
+
+                context.fillStyle = "#4CAF50";
+                context.fill();
+
+
+
+                context.beginPath();
+                context.moveTo(points[0].x + mouseX, points[0].y + mouseY);
+
+                for (let i = 1; i < points.length; i++) {
+                    context.lineTo(points[i].x + mouseX, points[i].y + mouseY);
+                }
+
+                context.closePath();
+
+                context.fillStyle = "#4CAF50";
+                context.fill();
+            }
+
+            function loop() {
+                                
+                draw();
+
+                requestAnimationFrame(loop);
+            }
+
+            loop();
+        })()
+    </script>
+</body>
+</html>
