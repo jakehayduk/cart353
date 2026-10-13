@@ -62,9 +62,15 @@
             ]
 
             const triangle2 = [
-                {x:100, y:50},
-                {x:200, y:20},
-                {x:250, y:130}
+                {x:500, y:50},
+                {x:300, y:20},
+                {x:290, y:130}
+            ]
+
+            const triangle2Ori = [
+                {x:500, y:50},
+                {x:300, y:20},
+                {x:290, y:130}
             ]
 
             function getAxes(vertices) {
@@ -103,35 +109,71 @@
                 return {min: min, max: max}; 
             }
 
+            function checkCollision(shapeA, shapeB) {
+                let axes = [...getAxes(shapeA), ...getAxes(shapeB)]
+
+                for (let axis of axes) {
+                    let shadowA = project(shapeA, axis);
+                    let shadowB = project(shapeB, axis);
+
+                    if (shadowA.max < shadowB.min || shadowB.max < shadowA.min) {
+                        return false; // no collision
+                    }
+                }
+
+                return true; // collision
+            }
+
+            function drawPolygon(vertices, color) {
+                ctx.beginPath();
+                ctx.moveTo(vertices[0].x, vertices[0].y);
+                for (let i = 1; i < vertices.length; i++) {
+                    ctx.lineTo(vertices[i].x, vertices[i].y);
+                }
+                ctx.closePath();
+                ctx.fillStyle = color;
+                ctx.fill();
+            };
+
             function draw() {
+                for (let i = 0; i < triangle2.length; i++) {
+                    triangle2[i].x = triangle2Ori[i].x + mouseX - canvas.width;
+                    triangle2[i].y = triangle2Ori[i].y + mouseY;
+                }
 
                 ctx.clearRect(0,0,canvas.width, canvas.height);
 
-                ctx.beginPath();
-                ctx.moveTo(triangle1[0].x, triangle1[0].y);
+                let isColliding = checkCollision(triangle1, triangle2);
 
-                for (let i = 1; i < triangle1.length; i++) {
-                    ctx.lineTo(triangle1[i].x, triangle1[i].y);
-                }
+                let color = isColliding ? 'rgba(255, 0, 0, 0.7)' : 'rgba(0, 255, 0, 0.7)';
 
-                ctx.closePath();
+                drawPolygon(triangle1, color);
+                drawPolygon(triangle2, color);
 
-                ctx.fillStyle = "#4CAF50";
-                ctx.fill();
-
+                // for (let i = 1; i < triangle2.length; i++) {
+                //     triangle2[i].x = triangle2[i].x + mouseX;
+                //     triangle2[i].y = triangle2[i].y + mouseY;
+                // }
+                // console.log(triangle2[0].x + mouseX);
                 
-                let tempAxes = getAxes(triangle1);
-                let projected = project(triangle1, tempAxes[0])
+
+                // let tempAxes = getAxes(triangle1);
+                
 
                 // console.log(projected);
                 
-                ctx.beginPath();
-                ctx.moveTo(projected.min * tempAxes[0].x, projected.min * tempAxes[0].y);
-                ctx.lineTo(projected.max * tempAxes[0].x, projected.max * tempAxes[0].y);
-                ctx.strokeStyle = "red";
-                ctx.lineWidth = 3;
-                ctx.stroke();
-                console.log("x: " + projected.min * tempAxes[0].x + "\n"+ "y: " + projected.min * tempAxes[0].y);
+                // for (let i = 0; i < tempAxes.length; i++) {
+                //     let projected = project(triangle1, tempAxes[i]);
+                //     ctx.beginPath();
+                //     ctx.moveTo(projected.min * tempAxes[i].x, projected.min * tempAxes[i].y);
+                //     ctx.lineTo(projected.max * tempAxes[i].x, projected.max * tempAxes[i].y);
+                //     ctx.strokeStyle = "rgba(255, 0, 0, 0.3)";
+                //     ctx.lineWidth = 3;
+                //     ctx.stroke();
+                //     ctx.closePath();
+                //     console.log(projected);
+                // }
+                
                 
                 
 
