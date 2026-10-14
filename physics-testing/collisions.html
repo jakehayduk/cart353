@@ -196,10 +196,25 @@
                 // ctx.fill();
             }
 
-            function loop() {
+            let frameCount = 0;
+            let fps = 60;
+            let lastTime = performance.now();
+
+            function loop(currentTime) {
                                 
                 draw();
 
+                frameCount++;
+                if (currentTime - lastTime >= 1000) {
+                    fps = frameCount;
+                    frameCount = 0;
+                    lastTime = currentTime;
+                }
+
+                ctx.fillStyle = "white";
+                ctx.font = "16px monospace";
+                ctx.fillText(fps, 10, 25); 
+                
                 requestAnimationFrame(loop);
             }
 
