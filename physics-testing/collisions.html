@@ -159,6 +159,9 @@
                 points.size = size;
                 points.vx = 0;
                 points.vy = 0;
+                points.rot = 0; // rotation in radians
+                // points.centerX = spawnX;
+                // points.centerY = spawnY;
 
                 return points;
             }
@@ -238,6 +241,41 @@
                 ctx.fill();
             };
 
+            function rotatePolygon(vertices, angle) {
+                // find the shape's center
+                let centerX = 0;
+                let centerY = 0;
+
+                for (let i = 0; i < vertices.length; i++) {
+                    centerX += vertices[i].x;
+                    centerY += vertices[i].y;
+                }
+
+                centerX = centerX / vertices.length;
+                centerY = centerY / vertices.length;
+
+                const cos = Math.cos(angle);
+                const sin = Math.sin(angle);
+
+                for (let i = 0; i < vertices.length; i++) {
+                    let point = vertices[i];
+
+                    let dx = point.x - centerX;
+                    let dy = point.y - centerY;
+
+                    let rotatedX = dx * cos - dy * sin;
+                    let rotatedY = dx * sin + dy * cos;
+
+                    point.x = centerX + rotatedX;
+                    point.y = centerY + rotatedY;
+                }
+
+                player.rot += angle;
+            }
+
+            let friction = 0.97;
+            let maxSpeed = 3;
+
             function draw() {
                 // for (let i = 0; i < triangle2.length; i++) {
                 //     triangle2[i].x = triangle2Ori[i].x + mouseX - canvas.width;
@@ -246,9 +284,21 @@
 
                 if (up) {
                     player.vy -= 0.1;
+
+                    player.vy = Math.max(player.vy, -maxSpeed); 
                 } else {
-                    player.vy *= 0.95;
+                    player.vy *= friction;
                 }
+
+                if (left) {
+                    // player.rot -= 0.05;
+                    rotatePolygon(player, -0.05);
+                    console.log(player.rot);
+                } else {
+                    player.vy *= friction;
+                }
+
+                // player.centerY = player.centerY + player.vy;
 
                 for (let i = 0; i < player.length; i++) {
                     player[i].y = player[i].y + player.vy;
