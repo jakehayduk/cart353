@@ -160,6 +160,7 @@
                 points.vx = 0;
                 points.vy = 0;
                 points.rot = 0; // rotation in radians
+                points.av = 0; // angular velocity
                 // points.centerX = spawnX;
                 // points.centerY = spawnY;
 
@@ -275,6 +276,7 @@
 
             let friction = 0.97;
             let maxSpeed = 3;
+            let maxRotSpeed = maxSpeed / 50;
 
             function draw() {
                 // for (let i = 0; i < triangle2.length; i++) {
@@ -286,17 +288,21 @@
                     player.vy -= 0.1;
 
                     player.vy = Math.max(player.vy, -maxSpeed); 
-                } else {
-                    player.vy *= friction;
                 }
+                
+                player.vy *= friction;
 
                 if (left) {
-                    // player.rot -= 0.05;
-                    rotatePolygon(player, -0.05);
-                    console.log(player.rot);
-                } else {
-                    player.vy *= friction;
-                }
+                    player.av -= 0.005;
+                    
+                } else if (right) {
+                    player.av += 0.005;
+                } 
+
+                player.av *= friction;
+
+                player.av = Math.min(Math.max(player.av, -maxRotSpeed), maxRotSpeed);
+                rotatePolygon(player, player.av);
 
                 // player.centerY = player.centerY + player.vy;
 
