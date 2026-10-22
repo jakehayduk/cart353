@@ -159,7 +159,7 @@
                 points.size = size;
                 points.vx = 0;
                 points.vy = 0;
-                points.rot = 0; // rotation in radians
+                points.rot = Math.PI * 1.5; // rotation in radians
                 points.av = 0; // angular velocity
                 // points.centerX = spawnX;
                 // points.centerY = spawnY;
@@ -276,7 +276,7 @@
 
             let friction = 0.97;
             let maxSpeed = 3;
-            let maxRotSpeed = maxSpeed / 50;
+            let maxRotSpeed = maxSpeed / 70;
 
             function draw() {
                 // for (let i = 0; i < triangle2.length; i++) {
@@ -285,12 +285,22 @@
                 // }
 
                 if (up) {
-                    player.vy -= 0.1;
+                    player.vy += Math.sin(player.rot) * 0.1;
+                    player.vx += Math.cos(player.rot) * 0.1;
 
-                    player.vy = Math.max(player.vy, -maxSpeed); 
+                    // player.vy = Math.max(player.vy, -maxSpeed); 
+                    // player.xy = Math.max(player.xy, -maxSpeed); 
+                } else if (down) {
+                    // player.vy += Math.sin(player.rot) * -0.1;
+                    // player.vx += Math.cos(player.rot) * -0.1;
+
+                    // player.vy = Math.max(player.vy, -maxSpeed); 
+                    // player.xy = Math.max(player.xy, -maxSpeed); 
                 }
                 
+                
                 player.vy *= friction;
+                player.vx *= friction;
 
                 if (left) {
                     player.av -= 0.005;
@@ -308,6 +318,7 @@
 
                 for (let i = 0; i < player.length; i++) {
                     player[i].y = player[i].y + player.vy;
+                    player[i].x = player[i].x + player.vx;
                 }
 
                 ctx.clearRect(0,0,canvas.width, canvas.height);
