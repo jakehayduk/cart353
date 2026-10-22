@@ -55,11 +55,11 @@
                 mouseVY = mouseY - mouseY2;
             })
 
-            const triangle1 = [
-                {x:100, y:50},
-                {x:200, y:20},
-                {x:250, y:130}
-            ]
+            // const playerPoly = [
+            //     {x:100, y:50},
+            //     {x:200, y:20},
+            //     {x:250, y:130}
+            // ]
 
             const triangle2 = [
                 {x:500, y:50},
@@ -67,11 +67,34 @@
                 {x:290, y:130}
             ]
 
-            const triangle2Ori = [
-                {x:500, y:50},
-                {x:300, y:20},
-                {x:290, y:130}
-            ]
+            // const triangle2Ori = [
+            //     {x:500, y:50},
+            //     {x:300, y:20},
+            //     {x:290, y:130}
+            // ]
+
+            let polygons = [];
+
+            function createPoly(vertNum, size) {
+                const points = [];
+                for (let i = 0; i < vertNum; i++) {
+                    const angle = (i * 2 * Math.PI / vertNum) - (Math.PI / 2);
+
+                    const x = (canvas.width / 2) + size * Math.cos(angle);
+                    const y = (canvas.height / 2) + size * Math.sin(angle);
+
+                    points.push({
+                        x: Number(x.toFixed(2)),
+                        y: Number(y.toFixed(2))
+                    })
+                }
+
+                return points;
+            }
+
+            polygons.push(createPoly(3, 50));
+            polygons.push(createPoly(12, 150));
+            console.log(polygons);
 
             // SAT
 
@@ -142,19 +165,20 @@
             };
 
             function draw() {
-                for (let i = 0; i < triangle2.length; i++) {
-                    triangle2[i].x = triangle2Ori[i].x + mouseX - canvas.width;
-                    triangle2[i].y = triangle2Ori[i].y + mouseY;
-                }
+                // for (let i = 0; i < triangle2.length; i++) {
+                //     triangle2[i].x = triangle2Ori[i].x + mouseX - canvas.width;
+                //     triangle2[i].y = triangle2Ori[i].y + mouseY;
+                // }
 
                 ctx.clearRect(0,0,canvas.width, canvas.height);
 
-                let isColliding = checkCollision(triangle1, triangle2);
+                let isColliding = checkCollision(polygons[0], polygons[1]);
 
-                let color = isColliding ? 'rgba(255, 0, 0, 0.7)' : 'rgba(0, 255, 0, 0.7)';
+                let color = isColliding ? 'rgba(255, 0, 0, 0.5)' : 'rgba(0, 255, 0, 0.7)';
+                // let color = 'rgba(255, 255, 255, 1)';
 
-                drawPolygon(triangle1, color);
-                drawPolygon(triangle2, color);
+                drawPolygon(polygons[0], color);
+                drawPolygon(polygons[1], color);
 
                 // for (let i = 1; i < triangle2.length; i++) {
                 //     triangle2[i].x = triangle2[i].x + mouseX;
@@ -163,7 +187,7 @@
                 // console.log(triangle2[0].x + mouseX);
                 
 
-                // let tempAxes = getAxes(triangle1);
+                // let tempAxes = getAxes(polygons[0]);
                 
 
                 // console.log(projected);
