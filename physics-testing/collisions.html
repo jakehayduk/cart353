@@ -8,8 +8,7 @@
     <style>
         canvas {
             display: block;
-            border-radius: 20px;
-            background: #0f1219;
+            background: black;
             width: min(96vw, 96vh);
             height: min(96vw, 96vh);
             max-width: 800px;
@@ -43,16 +42,65 @@
             let mouseVX;
             let mouseVY;
             
-            canvas.addEventListener('mousemove', (e) => {
+            // canvas.addEventListener('mousemove', (e) => {
                 
-                mouseX2 = mouseX;
-                mouseY2 = mouseY;
+            //     mouseX2 = mouseX;
+            //     mouseY2 = mouseY;
 
-                mouseX = e.offsetX;
-                mouseY = e.offsetY;
+            //     mouseX = e.offsetX;
+            //     mouseY = e.offsetY;
 
-                mouseVX = mouseX - mouseX2;
-                mouseVY = mouseY - mouseY2;
+            //     mouseVX = mouseX - mouseX2;
+            //     mouseVY = mouseY - mouseY2;
+            // })
+
+            let up = false;
+            let down = false;
+            let left = false;
+            let right = false;
+            
+            window.addEventListener('keydown', (e) => {
+                
+                switch (e.key) {
+                    case "ArrowUp" :
+                    case "w":
+                        up = true;
+                        break;
+                    case "ArrowDown":
+                    case "s":
+                        down = true;
+                        break;
+                    case "ArrowLeft" :
+                    case "a":
+                        left = true;
+                        break;
+                    case "ArrowRight":
+                    case "d":
+                        right = true;
+                        break;
+                }
+            })
+
+            window.addEventListener('keyup', (e) => {
+                
+                switch (e.key) {
+                    case "ArrowUp" :
+                    case "w":
+                        up = false;
+                        break;
+                    case "ArrowDown":
+                    case "s":
+                        down = false;
+                        break;
+                    case "ArrowLeft" :
+                    case "a":
+                        left = false;
+                        break;
+                    case "ArrowRight":
+                    case "d":
+                        right = false;
+                        break;
+                }
             })
 
             // const playerPoly = [
@@ -77,11 +125,29 @@
 
             function createPoly(vertNum, size) {
                 const points = [];
+
+                // points.push({
+                //     isPlayer,
+                //     vertNum,
+                //     size,
+                // })
+
+                let spawnX;
+                let spawnY;
+
+                // if (isPlayer) {
+                //     spawnX = canvas.width / 2;
+                //     spawnY = canvas.height / 2;
+                // } else {
+                    spawnX = rand(0, canvas.width);
+                    spawnY = rand(0, canvas.height);
+                // }
+
                 for (let i = 0; i < vertNum; i++) {
                     const angle = (i * 2 * Math.PI / vertNum) - (Math.PI / 2);
 
-                    const x = (canvas.width / 2) + size * Math.cos(angle);
-                    const y = (canvas.height / 2) + size * Math.sin(angle);
+                    const x = spawnX + size * Math.cos(angle);
+                    const y = spawnY + size * Math.sin(angle);
 
                     points.push({
                         x: Number(x.toFixed(2)),
@@ -89,11 +155,19 @@
                     })
                 }
 
+                points.vertNum = vertNum;
+                points.size = size;
+                points.vx = 0;
+                points.vy = 0;
+
                 return points;
             }
 
             polygons.push(createPoly(3, 50));
-            polygons.push(createPoly(12, 150));
+            // create the player shape and use this shorthand for accessing the player node easily
+            let player = polygons[0];
+
+            polygons.push(createPoly(10, 150));
             console.log(polygons);
 
             // SAT
@@ -169,6 +243,16 @@
                 //     triangle2[i].x = triangle2Ori[i].x + mouseX - canvas.width;
                 //     triangle2[i].y = triangle2Ori[i].y + mouseY;
                 // }
+
+                if (up) {
+                    player.vy -= 0.1;
+                } else {
+                    player.vy *= 0.95;
+                }
+
+                for (let i = 0; i < player.length; i++) {
+                    player[i].y = player[i].y + player.vy;
+                }
 
                 ctx.clearRect(0,0,canvas.width, canvas.height);
 
