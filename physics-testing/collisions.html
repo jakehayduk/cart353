@@ -172,7 +172,7 @@
             let player = polygons[0];
 
             polygons.push(createPoly(10, 150));
-            console.log(polygons);
+            // console.log(polygons);
 
             // SAT
 
@@ -326,6 +326,11 @@
                 let isColliding = checkCollision(polygons[0], polygons[1]);
 
                 let color = isColliding ? 'rgba(255, 0, 0, 0.5)' : 'rgba(0, 255, 0, 0.7)';
+
+                // if (isColliding) {
+                //     player.vy *= -1;
+                //     player.vx *= -1;
+                // }
                 // let color = 'rgba(255, 255, 255, 1)';
 
                 drawPolygon(polygons[0], color);
