@@ -364,8 +364,9 @@
                     }
                     
                     let dot = player.vx * collision.normal.x + player.vy * collision.normal.y;
-                    if (dot < 0) {
-                        let restitution = 0.9;
+                    if (dot > 0) {
+                        console.log("test");
+                        let restitution = 1;
                         player.vx -= (1 + restitution) * dot * collision.normal.x;
                         player.vy -= (1 + restitution) * dot * collision.normal.y;
                     }
