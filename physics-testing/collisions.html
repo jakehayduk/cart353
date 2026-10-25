@@ -32,6 +32,7 @@
             const gravity = 0;
 
             const rand = (min, max) => Math.random() * (max - min) + min;
+            const lerp = (a, b, t) => a * (1 - t) + b * t;
 
             let particles = [];
 
@@ -123,25 +124,19 @@
 
             let polygons = [];
 
-            function createPoly(vertNum, size) {
+            function createPoly(isPlayer, vertNum, size) {
                 const points = [];
-
-                // points.push({
-                //     isPlayer,
-                //     vertNum,
-                //     size,
-                // })
 
                 let spawnX;
                 let spawnY;
 
-                // if (isPlayer) {
-                //     spawnX = canvas.width / 2;
-                //     spawnY = canvas.height / 2;
-                // } else {
+                if (isPlayer) {
+                    spawnX = canvas.width / 2;
+                    spawnY = canvas.height / 2;
+                } else {
                     spawnX = rand(0, canvas.width);
                     spawnY = rand(0, canvas.height);
-                // }
+                }
 
                 for (let i = 0; i < vertNum; i++) {
                     const angle = (i * 2 * Math.PI / vertNum) - (Math.PI / 2);
@@ -167,11 +162,11 @@
                 return points;
             }
 
-            polygons.push(createPoly(3, 50));
+            polygons.push(createPoly(true, 3, 50)); // pass true to indicate it is the player shape.
             // create the player shape and use this shorthand for accessing the player node easily
             let player = polygons[0];
 
-            polygons.push(createPoly(10, 150));
+            polygons.push(createPoly(false, 10, 150));
             // console.log(polygons);
 
             // SAT
@@ -306,6 +301,12 @@
             let maxSpeed = 3;
             let maxRotSpeed = maxSpeed / 70;
 
+            let camera = {
+                x: canvas.width,
+                y: canvas.height,
+                init: false
+            }
+
             function draw() {
                 // for (let i = 0; i < triangle2.length; i++) {
                 //     triangle2[i].x = triangle2Ori[i].x + mouseX - canvas.width;
@@ -365,23 +366,46 @@
                     
                     let dot = player.vx * collision.normal.x + player.vy * collision.normal.y;
                     if (dot > 0) {
-                        console.log("test");
                         let restitution = 1;
                         player.vx -= (1 + restitution) * dot * collision.normal.x;
                         player.vy -= (1 + restitution) * dot * collision.normal.y;
                     }
                 }
 
-                
+                // camera.x = getCenter(player).x;
+                // camera.y = getCenter(player).y;
 
-                // if (isColliding) {
-                //     player.vy *= -1;
-                //     player.vx *= -1;
+                // for (let i = 0; i < polygons.length; i++) {
+                //     for (let v = 0; v < polygons[i].length; v++) {
+                //         polygons[i][v].x = camera.x;
+                //         polygons[i][v].y = camera.y;
+                //     }
                 // }
-                // let color = 'rgba(255, 255, 255, 1)';
+
+                // drawPolygon(polygons[0], color);
+                // drawPolygon(polygons[1], color);
+
+
+                let playerCenter = getCenter(player);
+
+                if (!camera.init) {
+                    camera.x = playerCenter.x;
+                    camera.y = playerCenter.y;
+                    camera.init = true;
+                }
+
+                camera.x = lerp(camera.x, playerCenter.x, 0.04);
+                camera.y = lerp(camera.y, playerCenter.y, 0.04);
+
+                ctx.save();
+
+                ctx.translate(canvas.width / 2 - camera.x, canvas.height / 2 - camera.y);
 
                 drawPolygon(polygons[0], color);
                 drawPolygon(polygons[1], color);
+
+                ctx.restore();
+
 
                 // for (let i = 1; i < triangle2.length; i++) {
                 //     triangle2[i].x = triangle2[i].x + mouseX;
