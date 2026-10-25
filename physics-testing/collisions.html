@@ -213,18 +213,39 @@
             }
 
             function checkCollision(shapeA, shapeB) {
-                let axes = [...getAxes(shapeA), ...getAxes(shapeB)]
+                let axes = [...getAxes(shapeA), ...getAxes(shapeB)];
+                let minOverlap = Infinity;
+                let smallestAxis = null;
                 
                 for (let axis of axes) {
                     let shadowA = project(shapeA, axis);
                     let shadowB = project(shapeB, axis);
 
                     if (shadowA.max < shadowB.min || shadowB.max < shadowA.min) {
-                        return false; // no collision
+                        return {colliding: false}; // no collision
+                    }
+
+                    let overlap = Math.min(shadowA.max, shadowB.max) - Math.max(shadowA.min, shadowB.min);
+                    if (overlap < minOverlap) {
+                        minOverlap = overlap;
+                        smallestAxis = axis;
                     }
                 }
 
-                return true; // collision
+                let centerA = getCenter(shapeA);
+                let centerB = getCenter(shapeB);
+                let dirX = centerB.x - centerA.x;
+                let dirY = centerB.y - centerA.y;
+
+                if ((dirX * smallestAxis.x + dirY * smallestAxis.y) < 0) {
+                    smallestAxis = {x: -smallestAxis.x, y: -smallestAxis.y};
+                }
+
+                return {
+                    colliding: true,
+                    normal: smallestAxis,
+                    depth: minOverlap
+                }; // collision
             }
 
             function createPolygon() {
@@ -242,7 +263,7 @@
                 ctx.fill();
             };
 
-            function rotatePolygon(vertices, angle) {
+            function getCenter(vertices) {
                 // find the shape's center
                 let centerX = 0;
                 let centerY = 0;
@@ -251,9 +272,16 @@
                     centerX += vertices[i].x;
                     centerY += vertices[i].y;
                 }
-
+                
                 centerX = centerX / vertices.length;
                 centerY = centerY / vertices.length;
+
+                return {x: centerX, y: centerY};
+            }
+
+            function rotatePolygon(vertices, angle) {
+                let centerX = getCenter(vertices).x;
+                let centerY = getCenter(vertices).y;
 
                 const cos = Math.cos(angle);
                 const sin = Math.sin(angle);
@@ -325,9 +353,25 @@
 
                 ctx.clearRect(0,0,canvas.width, canvas.height);
 
-                let isColliding = checkCollision(polygons[0], polygons[1]);
+                let collision = checkCollision(polygons[0], polygons[1]);
 
-                let color = isColliding ? 'rgba(255, 0, 0, 0.5)' : 'rgba(0, 255, 0, 0.7)';
+                let color = collision.colliding ? 'rgba(255, 0, 0, 0.5)' : 'rgba(0, 255, 0, 0.7)';
+
+                if (collision.colliding) {
+                    for (let i = 0; i < player.length; i++) {
+                        player[i].x -= collision.normal.x * collision.depth;
+                        player[i].y -= collision.normal.y * collision.depth;
+                    }
+                    
+                    let dot = player.vx * collision.normal.x + player.vy * collision.normal.y;
+                    if (dot < 0) {
+                        let restitution = 0.9;
+                        player.vx -= (1 + restitution) * dot * collision.normal.x;
+                        player.vy -= (1 + restitution) * dot * collision.normal.y;
+                    }
+                }
+
+                
 
                 // if (isColliding) {
                 //     player.vy *= -1;
