@@ -8,7 +8,7 @@
     <style>
         canvas {
             display: block;
-            background: black;
+            background: rgb(241, 189, 189);
             width: min(96vw, 96vh);
             height: min(96vw, 96vh);
             max-width: 800px;
@@ -36,12 +36,12 @@
 
             let particles = [];
 
-            let mouseX;
-            let mouseY;
-            let mouseX2;
-            let mouseY2;
-            let mouseVX;
-            let mouseVY;
+            // let mouseX;
+            // let mouseY;
+            // let mouseX2;
+            // let mouseY2;
+            // let mouseVX;
+            // let mouseVY;
             
             // canvas.addEventListener('mousemove', (e) => {
                 
@@ -104,23 +104,11 @@
                 }
             })
 
-            // const playerPoly = [
-            //     {x:100, y:50},
-            //     {x:200, y:20},
-            //     {x:250, y:130}
-            // ]
-
             const triangle2 = [
                 {x:500, y:50},
                 {x:300, y:20},
                 {x:290, y:130}
             ]
-
-            // const triangle2Ori = [
-            //     {x:500, y:50},
-            //     {x:300, y:20},
-            //     {x:290, y:130}
-            // ]
 
             let polygons = [];
 
@@ -156,8 +144,6 @@
                 points.vy = 0;
                 points.rot = Math.PI * 1.5; // rotation in radians
                 points.av = 0; // angular velocity
-                // points.centerX = spawnX;
-                // points.centerY = spawnY;
 
                 return points;
             }
@@ -167,7 +153,6 @@
             let player = polygons[0];
 
             polygons.push(createPoly(false, 10, 150));
-            // console.log(polygons);
 
             // SAT
 
@@ -308,27 +293,14 @@
             }
 
             function draw() {
-                // for (let i = 0; i < triangle2.length; i++) {
-                //     triangle2[i].x = triangle2Ori[i].x + mouseX - canvas.width;
-                //     triangle2[i].y = triangle2Ori[i].y + mouseY;
-                // }
 
                 if (up) {
                     player.vy += Math.sin(player.rot) * 0.1;
                     player.vx += Math.cos(player.rot) * 0.1;
-
-                    // player.vy = Math.max(player.vy, -maxSpeed); 
-                    // player.xy = Math.max(player.xy, -maxSpeed); 
                 } else if (down) {
-                    // player.vy += Math.sin(player.rot) * -0.1;
-                    // player.vx += Math.cos(player.rot) * -0.1;
-
-                    // player.vy = Math.max(player.vy, -maxSpeed); 
-                    // player.xy = Math.max(player.xy, -maxSpeed);
                     player.vy += Math.sin(player.rot) * -0.1;
                     player.vx += Math.cos(player.rot) * -0.1;
                 }
-                
                 
                 player.vy *= friction;
                 player.vx *= friction;
@@ -345,8 +317,6 @@
                 player.av = Math.min(Math.max(player.av, -maxRotSpeed), maxRotSpeed);
                 rotatePolygon(player, player.av);
 
-                // player.centerY = player.centerY + player.vy;
-
                 for (let i = 0; i < player.length; i++) {
                     player[i].y = player[i].y + player.vy;
                     player[i].x = player[i].x + player.vx;
@@ -356,7 +326,8 @@
 
                 let collision = checkCollision(polygons[0], polygons[1]);
 
-                let color = collision.colliding ? 'rgba(255, 0, 0, 0.5)' : 'rgba(0, 255, 0, 0.7)';
+                // let color = collision.colliding ? 'rgba(255, 0, 0, 0.5)' : 'rgba(0, 255, 0, 0.7)';
+                let color = 'rgba(150, 0, 0, 0.5)'
 
                 if (collision.colliding) {
                     for (let i = 0; i < player.length; i++) {
@@ -372,19 +343,8 @@
                     }
                 }
 
-                // camera.x = getCenter(player).x;
-                // camera.y = getCenter(player).y;
 
-                // for (let i = 0; i < polygons.length; i++) {
-                //     for (let v = 0; v < polygons[i].length; v++) {
-                //         polygons[i][v].x = camera.x;
-                //         polygons[i][v].y = camera.y;
-                //     }
-                // }
-
-                // drawPolygon(polygons[0], color);
-                // drawPolygon(polygons[1], color);
-
+                // CAMERA
 
                 let playerCenter = getCenter(player);
 
@@ -405,46 +365,6 @@
                 drawPolygon(polygons[1], color);
 
                 ctx.restore();
-
-
-                // for (let i = 1; i < triangle2.length; i++) {
-                //     triangle2[i].x = triangle2[i].x + mouseX;
-                //     triangle2[i].y = triangle2[i].y + mouseY;
-                // }
-                // console.log(triangle2[0].x + mouseX);
-                
-
-                // let tempAxes = getAxes(polygons[0]);
-                
-
-                // console.log(projected);
-                
-                // for (let i = 0; i < tempAxes.length; i++) {
-                //     let projected = project(triangle1, tempAxes[i]);
-                //     ctx.beginPath();
-                //     ctx.moveTo(projected.min * tempAxes[i].x, projected.min * tempAxes[i].y);
-                //     ctx.lineTo(projected.max * tempAxes[i].x, projected.max * tempAxes[i].y);
-                //     ctx.strokeStyle = "rgba(255, 0, 0, 0.3)";
-                //     ctx.lineWidth = 3;
-                //     ctx.stroke();
-                //     ctx.closePath();
-                //     console.log(projected);
-                // }
-                
-                
-                
-
-                // ctx.beginPath();
-                // ctx.moveTo(points[0].x + mouseX, points[0].y + mouseY);
-
-                // for (let i = 1; i < points.length; i++) {
-                //     ctx.lineTo(points[i].x + mouseX, points[i].y + mouseY);
-                // }
-
-                // ctx.closePath();
-
-                // ctx.fillStyle = "#4CAF50";
-                // ctx.fill();
             }
 
             let frameCount = 0;
