@@ -282,6 +282,21 @@
                 player.rot += angle;
             }
 
+            function getContactPoint(shape, normal) {
+                let deepestVertex = shape[0];
+                let minProj = (shape[0].x * normal.x) + (shape[0].y * normal.y);
+
+                for (let i = 1; i < shape.length; i++) {
+                    let proj = (shape[i].x * normal.x) + (shape[i].y * normal.y);
+                    if (proj < minProj) {
+                        minProj = proj;
+                        deepestVertex = shape[i];
+                    }
+                }
+
+                return deepestVertex;
+            }
+
             let friction = 0.97;
             let maxSpeed = 3;
             let maxRotSpeed = maxSpeed / 70;
@@ -335,11 +350,35 @@
                         player[i].y -= collision.normal.y * collision.depth;
                     }
                     
-                    let dot = player.vx * collision.normal.x + player.vy * collision.normal.y;
-                    if (dot > 0) {
-                        let restitution = 1;
-                        player.vx -= (1 + restitution) * dot * collision.normal.x;
-                        player.vy -= (1 + restitution) * dot * collision.normal.y;
+                    // let dot = player.vx * collision.normal.x + player.vy * collision.normal.y;
+                    // if (dot > 0) {
+                    //     let restitution = 1;
+                    //     player.vx -= (1 + restitution) * dot * collision.normal.x;
+                    //     player.vy -= (1 + restitution) * dot * collision.normal.y;
+                    // }
+
+                    let center = getCenter(player);
+                    let contact = getContactPoint(player, collision.normal);
+
+                    let rx = contact.x - center.x;
+                    let ry = contact.y - center.y;
+
+                    let contactVx = player.vx - player.av * ry;
+                    let contactVy = player.vy + player.av * rx;
+
+                    let normalVel = contactVx * collision.normal.x + contactVy * collision.normal.y;
+
+                    if (normalVel > 0) {
+                        let restitution = 0.3;
+                        let invInertia = 0.0005;
+
+                        let rCrossN = (rx * collision.normal.y) - (ry * collision.normal.x);
+
+                        let impulseScalar = -(1 + restitution) * normalVel / (1 + (rCrossN * rCrossN) * invInertia);
+
+                        player.vx += impulseScalar * collision.normal.x;
+                        player.vy += impulseScalar * collision.normal.y;
+                        player.av += rCrossN * impulseScalar * invInertia;
                     }
                 }
 
