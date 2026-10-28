@@ -144,6 +144,7 @@
                 points.vy = 0;
                 points.rot = Math.PI * 1.5; // rotation in radians
                 points.av = 0; // angular velocity
+                points.speed = rand(1, 20) / 10;
 
                 return points;
             }
@@ -152,7 +153,7 @@
             // create the player shape and use this shorthand for accessing the player node easily
             let player = polygons[0];
 
-            polygons.push(createPoly(false, 100, 150));
+            polygons.push(createPoly(false, 5, 150));
 
             // SAT
 
@@ -228,10 +229,6 @@
                 }; // collision
             }
 
-            function createPolygon() {
-                // do something
-            }
-
             function drawPolygon(vertices, color) {
                 ctx.beginPath();
                 ctx.moveTo(vertices[0].x, vertices[0].y);
@@ -297,9 +294,9 @@
                 return deepestVertex;
             }
 
-            let friction = 0.97;
-            let maxSpeed = 3;
-            let maxRotSpeed = maxSpeed / 70;
+            let friction = 0.955;
+            let maxSpeed = 2.5;
+            let maxRotSpeed = maxSpeed / 30;
 
             let camera = {
                 x: canvas.width,
@@ -308,34 +305,38 @@
             }
 
             function draw(deltaTime) {
+                if (!deltaTime) { deltaTime = 1; }
 
                 if (up) {
-                    player.vy += Math.sin(player.rot) * 0.1;
-                    player.vx += Math.cos(player.rot) * 0.1;
+                    player.vy += Math.sin(player.rot) * 0.1 * maxSpeed;
+                    player.vx += Math.cos(player.rot) * 0.1 * maxSpeed;
                 } else if (down) {
-                    player.vy += Math.sin(player.rot) * -0.1;
-                    player.vx += Math.cos(player.rot) * -0.1;
+                    player.vy += Math.sin(player.rot) * -0.1 * maxSpeed;
+                    player.vx += Math.cos(player.rot) * -0.1 * maxSpeed;
                 }
                 
                 player.vy *= friction;
                 player.vx *= friction;
 
                 if (left) {
-                    player.av -= 0.005;
+                    player.av -= 0.005 * deltaTime;
                     
                 } else if (right) {
-                    player.av += 0.005;
+                    player.av += 0.005 * deltaTime;
                 } 
 
                 player.av *= friction;
 
                 player.av = Math.min(Math.max(player.av, -maxRotSpeed), maxRotSpeed);
                 rotatePolygon(player, player.av);
-
-                for (let i = 0; i < player.length; i++) {
-                    player[i].y = player[i].y + player.vy;
-                    player[i].x = player[i].x + player.vx;
+                
+                for (let n = 0; n < polygons.length; n++) {
+                    for (let i = 0; i < polygons[n].length; i++) {
+                        polygons[n][i].y = polygons[n][i].y + polygons[n].vy * deltaTime;
+                        polygons[n][i].x = polygons[n][i].x + polygons[n].vx * deltaTime;
+                    }
                 }
+                
 
                 ctx.clearRect(0,0,canvas.width, canvas.height);
 
@@ -393,21 +394,15 @@
                     camera.init = true;
                 }
 
-                camera.x = lerp(camera.x, playerCenter.x, 0.04);
-                camera.y = lerp(camera.y, playerCenter.y, 0.04);
+                camera.x = lerp(camera.x, playerCenter.x, 0.05);
+                camera.y = lerp(camera.y, playerCenter.y, 0.05);
 
                 ctx.save();
 
                 ctx.translate(canvas.width / 2 - camera.x, canvas.height / 2 - camera.y);
 
 
-                // multiply all positions by the delta time
-                if (!deltaTime) { deltaTime = 1; }
-
-                for (let i = 0; i < polygons.length; i++) {
-                    polygons[i].x += deltaTime;
-                    polygons[i].y += deltaTime;
-                }
+               
 
                 drawPolygon(polygons[0], color);
                 drawPolygon(polygons[1], color);
@@ -421,7 +416,7 @@
             let frameInt = 1000 / fps;
             let deltaTimeMultiplier = 1;
             let deltaTime = 0;
-            let globalSpeed = 3;
+            let globalSpeed = 1;
 
             function loop(currentTime) {
                                 
