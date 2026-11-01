@@ -364,21 +364,50 @@
                 ctx.clearRect(0,0,canvas.width, canvas.height);
 
                 for (let i = 0; i < polygons.length; i++) {
-                    for (let n = 0; n < polygons.length; n++) {
-                        let collision;
-                        // check the collision between every object except itself (duh)
-                        if (n !== i) {
-                            collision = checkCollision(polygons[i], polygons[n]);
+                    // check every combination minus the duplicates
+                    for (let n = i + 1; n < polygons.length; n++) {
+                        let collision = checkCollision(polygons[i], polygons[n]);
                         
-                            if (collision.colliding) {
-                                    polygons[i].vx -= collision.normal.x * collision.depth;
-                                    polygons[i].vy -= collision.normal.y * collision.depth;
+                        if (collision.colliding) {
+                            let polyA = polygons[i];
+                            let polyB = polygons[n];
+                            
+                            let percent = 0.5; // separation percentage
+                            polyA.x -= collision.normal.x * collision.depth * percent;
+                            polyA.y -= collision.normal.y * collision.depth * percent;
+                            polyB.x += collision.normal.x * collision.depth * percent;
+                            polyB.y += collision.normal.y * collision.depth * percent;
+
+                            let centerA = getCenter(polyA);
+                            let centerB = getCenter(polyB);
+                            let contact = getContactPoint(polyA, collision.normal);
+
+                            let rxA = contact.x - centerA.x;
+                            let ryA = contact.y - centerA.y;
+                            let rxB = contact.x - centerB.x;
+                            let ryB = contact.y - centerB.y;
+
+                            let contactVxA = polyA.vx - polyA.av * ryA;
+                            let contactVyA = polyA.vy + polyA.av * rxA;
+                            let contactVxB = polyB.vx - polyB.av * ryB;
+                            let contactVyB = polyB.vy + polyB.av * rxB;
+
+                            let normalVel = contactVx * collision.normal.x + contactVy * collision.normal.y;
+
+                            if (normalVel > 0) {
+                                let restitution = 0.3;
+                                let invInertia = 0.0005;
+
+                                let rCrossN = (rx * collision.normal.y) - (ry * collision.normal.x);
+
+                                let impulseScalar = -(1 + restitution) * normalVel / (1 + (rCrossN * rCrossN) * invInertia);
+
+                                polygons[i].vx += impulseScalar * collision.normal.x;
+                                polygons[i].vy += impulseScalar * collision.normal.y;
+                                polygons[i].av += rCrossN * impulseScalar * invInertia;
                             }
                         }
-                        
                     }
-        
-                    
                 }
 
                 // let collision = checkCollision(polygons[0], polygons[1]);
