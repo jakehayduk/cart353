@@ -392,6 +392,10 @@
                             
                             let percent = 0.5; // separation percentage
 
+                            polyA.vx -= collision.normal.x * collision.depth;
+                            polyA.vy -= collision.normal.y * collision.depth;
+                            polyB.vx += collision.normal.x * collision.depth;
+                            polyB.vy += collision.normal.y * collision.depth;
 
                             for (let v of polyA) {
                                 v.x -= collision.normal.x * collision.depth * percent;
