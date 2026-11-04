@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Collisions</title>
+
+    <style>
+        body {
+            background: black;
+        }
+        
+        canvas {
+            display: block;
+            background: rgb(241, 189, 189);
+            width: min(96vw, 96vh);
+            height: min(96vw, 96vh);
+            max-width: 800px;
+            max-height: 800px;
+            cursor: crosshair;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="particleCanvas"></canvas>
+    <script>
+        (function() {
+
+            const canvas = document.getElementById('particleCanvas');
+
+            canvas.width = canvas.clientWidth;
+            canvas.height = canvas.clientHeight;
+
+            const ctx = canvas.getContext('2d');
+
+            const gravity = 0;
+
+            const rand = (min, max) => Math.random() * (max - min) + min;
+            const lerp = (a, b, t) => a * (1 - t) + b * t;
+
+            let particles = [];
+
+            // let mouseX;
+            // let mouseY;
+            // let mouseX2;
+            // let mouseY2;
+            // let mouseVX;
+            // let mouseVY;
+            
+            // canvas.addEventListener('mousemove', (e) => {
+                
+            //     mouseX2 = mouseX;
+            //     mouseY2 = mouseY;
+
+            //     mouseX = e.offsetX;
+            //     mouseY = e.offsetY;
+
+            //     mouseVX = mouseX - mouseX2;
+            //     mouseVY = mouseY - mouseY2;
+            // })
+
+            let up = false;
+            let down = false;
+            let left = false;
+            let right = false;
+            
+            window.addEventListener('keydown', (e) => {
+                
+                switch (e.key) {
+                    case "ArrowUp" :
+                    case "w":
+                        up = true;
+                        break;
+                    case "ArrowDown":
+                    case "s":
+                        down = true;
+                        break;
+                    case "ArrowLeft" :
+                    case "a":
+                        left = true;
+                        break;
+                    case "ArrowRight":
+                    case "d":
+                        right = true;
+                        break;
+                }
+            })
+
+            window.addEventListener('keyup', (e) => {
+                
+                switch (e.key) {
+                    case "ArrowUp" :
+                    case "w":
+                        up = false;
+                        break;
+                    case "ArrowDown":
+                    case "s":
+                        down = false;
+                        break;
+                    case "ArrowLeft" :
+                    case "a":
+                        left = false;
+                        break;
+                    case "ArrowRight":
+                    case "d":
+                        right = false;
+                        break;
+                }
+            })
+
+            const triangle2 = [
+                {x:500, y:50},
+                {x:300, y:20},
+                {x:290, y:130}
+            ]
+
+            let polygons = [];
+
+            function createPoly(isPlayer, vertNum, size) {
+                const points = [];
+
+                let spawnX;
+                let spawnY;
+
+                if (isPlayer) {
+                    spawnX = canvas.width / 2;
+                    spawnY = canvas.height / 2;
+                } else {
+                    spawnX = rand(0, canvas.width);
+                    spawnY = rand(0, canvas.height);
+                }
+
+                for (let i = 0; i < vertNum; i++) {
+                    const angle = (i * 2 * Math.PI / vertNum) - (Math.PI / 2);
+
+                    const x = spawnX + size * Math.cos(angle);
+                    const y = spawnY + size * Math.sin(angle);
+
+                    points.push({
+                        x: Number(x.toFixed(2)),
+                        y: Number(y.toFixed(2))
+                    })
+                }
+
+                if (isPlayer) {
+                    points.vertNum = vertNum;
+                    points.size = size;
+                    points.vx = 0;
+                    points.vy = 0;
+                    points.rot = Math.PI * 1.5; // rotation in radians
+                    points.av = 0; // angular velocity
+                } else {
+                    points.vertNum = vertNum;
+                    points.size = size;
+                    points.vx = 0;
+                    points.vy = 0;
+                    points.rot = Math.PI * (rand(0, 20) / 10); // rotation in radians
+                    points.av = 0; // angular velocity
+                    points.speed = rand(1, 20) / 100;
+                }
+                
+
+                return points;
+            }
+
+            polygons.push(createPoly(true, 3, 50)); // pass true to indicate it is the player shape.
+            // create the player shape and use this shorthand for accessing the player node easily
+            let player = polygons[0];
+
+            polygons.push(createPoly(false, 5, 100));
+            polygons.push(createPoly(false, 4, 50));
+            polygons.push(createPoly(false, 7, 30));
+
+            // SAT
+
+            function getAxes(vertices) {
+                let axes = [];
+                for (let i = 0; i < vertices.length; i++) {
+                    let p1 = vertices[i];
+                    let p2 = vertices[(i + 1) % vertices.length];
+
+                    // subtract vertices to get each edge (with x and y vectors)
+                    let edge = {x: p2.x - p1.x, y: p2.y - p1.y};
+
+                    let normal = {x: -edge.y, y: edge.x};
+                    let length = Math.sqrt(normal.x * normal.x + normal.y * normal.y);
+
+                    axes.push({
+                        x: normal.x / length,
+                        y: normal.y / length
+                    })
+                }
+
+                return axes;
+            }
+
+            function project(vertices, axis) {
+                let min = (vertices[0].x * axis.x) + (vertices[0].y * axis.y);
+                let max = min;
+
+                for (let i = 1; i < vertices.length; i++) {
+                    // dot product projection
+                    let projection = (vertices[i].x * axis.x) + (vertices[i].y * axis.y);
+
+                    if (projection < min) {min = projection;}
+                    if (projection > max) {max = projection;}
+                }
+                // return the projected 1D shadow shape
+                return {min: min, max: max}; 
+            }
+
+            function checkCollision(shapeA, shapeB) {
+                let axes = [...getAxes(shapeA), ...getAxes(shapeB)];
+                let minOverlap = Infinity;
+                let smallestAxis = null;
+                
+                for (let axis of axes) {
+                    let shadowA = project(shapeA, axis);
+                    let shadowB = project(shapeB, axis);
+
+                    if (shadowA.max < shadowB.min || shadowB.max < shadowA.min) {
+                        return {colliding: false}; // no collision
+                    }
+
+                    let overlap = Math.min(shadowA.max, shadowB.max) - Math.max(shadowA.min, shadowB.min);
+                    if (overlap < minOverlap) {
+                        minOverlap = overlap;
+                        smallestAxis = axis;
+                    }
+                }
+
+                let centerA = getCenter(shapeA);
+                let centerB = getCenter(shapeB);
+                let dirX = centerB.x - centerA.x;
+                let dirY = centerB.y - centerA.y;
+
+                if ((dirX * smallestAxis.x + dirY * smallestAxis.y) < 0) {
+                    smallestAxis = {x: -smallestAxis.x, y: -smallestAxis.y};
+                }
+
+                return {
+                    colliding: true,
+                    normal: smallestAxis,
+                    depth: minOverlap
+                }; // collision
+            }
+
+            function drawPolygon(vertices, color) {
+                ctx.beginPath();
+                ctx.moveTo(vertices[0].x, vertices[0].y);
+                for (let i = 1; i < vertices.length; i++) {
+                    ctx.lineTo(vertices[i].x, vertices[i].y);
+                }
+                ctx.closePath();
+                ctx.fillStyle = color;
+                ctx.fill();
+            };
+
+            function getCenter(vertices) {
+                // find the shape's center
+                let centerX = 0;
+                let centerY = 0;
+
+                for (let i = 0; i < vertices.length; i++) {
+                    centerX += vertices[i].x;
+                    centerY += vertices[i].y;
+                }
+                
+                centerX = centerX / vertices.length;
+                centerY = centerY / vertices.length;
+
+                return {x: centerX, y: centerY};
+            }
+
+            function rotatePolygon(vertices, angle) {
+                let centerX = getCenter(vertices).x;
+                let centerY = getCenter(vertices).y;
+
+                const cos = Math.cos(angle);
+                const sin = Math.sin(angle);
+
+                for (let i = 0; i < vertices.length; i++) {
+                    let point = vertices[i];
+
+                    let dx = point.x - centerX;
+                    let dy = point.y - centerY;
+
+                    let rotatedX = dx * cos - dy * sin;
+                    let rotatedY = dx * sin + dy * cos;
+
+                    point.x = centerX + rotatedX;
+                    point.y = centerY + rotatedY;
+                }
+
+                vertices.rot += angle;
+            }
+
+            function getContactPoint(shapeA, shapeB, normal) {
+                // Find the vertex on shapeA that penetrates furthest into shapeB along the normal
+                let deepestVertex = shapeA[0];
+                let maxDist = -Infinity;
+
+                for (let i = 0; i < shapeA.length; i++) {
+                    let v = shapeA[i];
+                    // Project vertex along normal relative to shape B's center or position
+                    let dist = (v.x * normal.x) + (v.y * normal.y);
+                    if (dist > maxDist) {
+                        maxDist = dist;
+                        deepestVertex = v;
+                    }
+                }
+                return deepestVertex;
+            }
+
+            let friction = 1;
+            let maxSpeed = 2.5;
+            let maxRotSpeed = maxSpeed / 20;
+
+            let camera = {
+                x: canvas.width,
+                y: canvas.height,
+                init: false
+            }
+
+            function draw(deltaTime) {
+                if (!deltaTime) { deltaTime = 1; }
+
+                friction = 0.98 - deltaTime / 50;
+
+                if (up) {
+                    player.vy += Math.sin(player.rot) * 0.1 * maxSpeed;
+                    player.vx += Math.cos(player.rot) * 0.1 * maxSpeed;
+                } else if (down) {
+                    player.vy += Math.sin(player.rot) * -0.1 * maxSpeed;
+                    player.vx += Math.cos(player.rot) * -0.1 * maxSpeed;
+                }
+                
+                player.vy *= friction;
+                player.vx *= friction;
+
+                if (left) {
+                    player.av -= 0.01 * deltaTime;
+                    
+                } else if (right) {
+                    player.av += 0.01 * deltaTime;
+                } 
+
+                player.av *= friction;
+
+                player.av = Math.min(Math.max(player.av, -maxRotSpeed), maxRotSpeed);
+
+                for (let i = 0; i < polygons.length; i++) {
+                    let poly = polygons[i];
+
+                    if (i > 0) {
+                        poly.vx += Math.cos(poly.rot) * 0.1 * poly.speed;
+                        poly.vy += Math.sin(poly.rot) * 0.1 * poly.speed;
+                        poly.vx *= friction;
+                        poly.vy *= friction;
+                        poly.av *= friction;
+                    }
+
+                    if (poly.av !== 0) {
+                        rotatePolygon(poly, poly.av * deltaTimeMultiplier)
+                    }
+                }
+        
+
+                // update all polygon positions (including player)
+                for (let n = 0; n < polygons.length; n++) {
+                    for (let i = 0; i < polygons[n].length; i++) {
+                        polygons[n][i].y = polygons[n][i].y + polygons[n].vy * deltaTime;
+                        polygons[n][i].x = polygons[n][i].x + polygons[n].vx * deltaTime;
+                    }
+                }
+                
+
+                ctx.clearRect(0,0,canvas.width, canvas.height);
+
+                for (let i = 0; i < polygons.length; i++) {
+                    // check every combination minus the duplicates
+                    for (let n = i + 1; n < polygons.length; n++) {
+                        let collision = checkCollision(polygons[i], polygons[n]);
+                        
+                        if (collision.colliding) {
+                            let polyA = polygons[i];
+                            let polyB = polygons[n];
+                            
+                            let percent = 0.5; // separation percentage
+
+
+                            for (let v of polyA) {
+                                v.x -= collision.normal.x * collision.depth * percent;
+                                v.y -= collision.normal.y * collision.depth * percent;
+                            }
+                            for (let v of polyB) {
+                                v.x += collision.normal.x * collision.depth * percent;
+                                v.y += collision.normal.y * collision.depth * percent;
+                            }
+                        }
+                    }
+                }
+                
+
+
+                // CAMERA
+
+                let playerCenter = getCenter(player);
+
+                if (!camera.init) {
+                    camera.x = playerCenter.x;
+                    camera.y = playerCenter.y;
+                    camera.init = true;
+                }
+
+                camera.x = lerp(camera.x, playerCenter.x, 0.05);
+                camera.y = lerp(camera.y, playerCenter.y, 0.05);
+
+                ctx.save();
+
+                ctx.translate(canvas.width / 2 - camera.x, canvas.height / 2 - camera.y);
+                
+
+                let color = 'rgba(150, 0, 0, 0.5)';
+
+                for (let i = 0; i < polygons.length; i++) {
+                    drawPolygon(polygons[i], color);
+                }
+                
+
+                ctx.restore();
+            }
+
+            let frameCount = 0;
+            let fps = 60;
+            let lastTime = performance.now();
+            let frameInt = 1000 / fps;
+            let deltaTimeMultiplier = 1;
+            let deltaTime = 0;
+            let globalSpeed = 1;
+
+            function loop(currentTime) {
+                                
+                deltaTime = currentTime - lastTime;
+                deltaTimeMultiplier = (deltaTime / frameInt) * globalSpeed;
+                
+                fps = 1000 / deltaTime;
+                
+                lastTime = currentTime;
+                
+                draw(deltaTimeMultiplier);
+
+                ctx.fillStyle = "white";
+                ctx.font = "16px monospace";
+                ctx.fillText(fps.toFixed(0), 10, 25); 
+                
+                requestAnimationFrame(loop);
+            }
+            
+            loop();
+        })()
+    </script>
+</body>
+</html>
