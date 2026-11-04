@@ -382,8 +382,10 @@
                 ctx.clearRect(0,0,canvas.width, canvas.height);
 
                 for (let i = 0; i < polygons.length; i++) {
+                    console.log(polygons[i]);
                     // check every combination minus the duplicates
                     for (let n = i + 1; n < polygons.length; n++) {
+                        
                         let collision = checkCollision(polygons[i], polygons[n]);
                         
                         if (collision.colliding) {
