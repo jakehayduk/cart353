@@ -295,21 +295,21 @@
                 vertices.rot += angle;
             }
 
-            function getContactPoint(shapeA, normal) {
-                // Find the vertex on shapeA that penetrates furthest into shapeB along the normal
-                let deepestVertex = shapeA[0];
-                let maxDist = -Infinity;
+            function getContactPoint(polyA, normal) {
+                // Find the vertex on shapeA that is furthest into shapeB along the normal
+                let deepestVertex = polyA[0];
+                let minProjection = Infinity;
 
-                for (let i = 0; i < shapeA.length; i++) {
-                    let v = shapeA[i];
-                    // Project vertex along normal relative to shape B's center or position
-                    let dist = (v.x * normal.x) + (v.y * normal.y);
-                    if (dist > maxDist) {
-                        maxDist = dist;
+                for (let v of polyA) {
+                    let projection = v.x * normal.x + v.y * normal.y;
+                    
+                    if (projection < minProjection) {
+                        minProjection = projection;
                         deepestVertex = v;
                     }
                 }
-                return deepestVertex;
+
+                return { x: deepestVertex.x, y: deepestVertex.y };
             }
 
             let friction = 1;
@@ -397,10 +397,10 @@
                             
                             let percent = 0.5; // separation percentage
 
-                            polyA.vx -= collision.normal.x * collision.depth;
-                            polyA.vy -= collision.normal.y * collision.depth;
-                            polyB.vx += collision.normal.x * collision.depth;
-                            polyB.vy += collision.normal.y * collision.depth;
+                            // polyA.vx -= collision.normal.x * collision.depth;
+                            // polyA.vy -= collision.normal.y * collision.depth;
+                            // polyB.vx += collision.normal.x * collision.depth;
+                            // polyB.vy += collision.normal.y * collision.depth;
 
                             for (let v of polyA) {
                                 v.x -= collision.normal.x * collision.depth * percent;
@@ -412,9 +412,24 @@
                             }
                             let centerA = getCenter(polyA);
                             let centerB = getCenter(polyB);
+                            // get the contact points
                             let contactA = getContactPoint(polyA, collision.normal);
-                            let contactB = getContactPoint(polyB, collision.normal);
-                            console.log(contactA.x - centerA.x);
+                            let contactB = getContactPoint(polyB, {x: -collision.normal.x, y: -collision.normal.y});
+                            // distance from the center of the shape to the collision point (r)
+                            let rxA = contactA.x - centerA.x;
+                            let ryA = contactA.y - centerA.y;
+                            let rxB = contactB.x - centerB.x;
+                            let ryB = contactB.y - centerB.y;
+                            // calculate the torque using cross product
+                            // use the collision normal as the force vector
+                            let torqueScale = 0.05;
+                            let tA = ((rxA * collision.normal.y) - (ryA * collision.normal.x)) * torqueScale;
+                            let tB = ((rxB * collision.normal.y) - (ryB * collision.normal.x)) * torqueScale;
+
+                            // update the angular velocities
+                            polyA.av += tA / 1;
+                            polyB.av -= tB / 1;
+
                             // console.log(contactB);
                             // polyA.av += 
                             // let polyA = polygons[i];
