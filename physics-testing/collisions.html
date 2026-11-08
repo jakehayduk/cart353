@@ -381,11 +381,22 @@
                 for (let i = 0; i < polygons.length; i++) {
                     // check every combination minus the duplicates
                     for (let n = i + 1; n < polygons.length; n++) {
-                        let collision = checkCollision(polygons[i], polygons[n]);
+                        let polyA = polygons[i];
+                        let polyB = polygons[n];
+                        
+                        let centerA = getCenter(polyA);
+                        let centerB = getCenter(polyB);
+
+                        let collision = { colliding: false };
+                        // do a preliminary lightweight check to see if the polygons are close enough before implementing SAT collision checks
+                        let dx = Math.abs(centerA.x - centerB.x);
+                        let dy = Math.abs(centerA.y - centerB.y);
+                        let polySizes = polyA.size + polyB.size;
+                        if (dx < polySizes + 30 && dy < polySizes + 30) {
+                            collision = checkCollision(polyA, polyB);
+                        }
                         
                         if (collision.colliding) {
-                            let polyA = polygons[i];
-                            let polyB = polygons[n];
                             
                             let percent = 0.2; // separation percentage
                             let slop = 0.5;
@@ -411,9 +422,6 @@
                                 polyB.vy += correctionY * 10;
                             }
 
-
-                            let centerA = getCenter(polyA);
-                            let centerB = getCenter(polyB);
 
                             // find contact points for both shapes relative to the collision normal
                             let contactA = getContactPoint(polyA, polyB, collision.normal);
@@ -446,8 +454,8 @@
                                 }
                                 let invInertiaA = 0.005;
                                 let invInertiaB = 0.005;
-                                let invMassA = (polyA.size * polyA.size);
-                                let invMassB = (polyB.size * polyA.size);
+                                let invMassA = (polyA.size / polyA.size);
+                                let invMassB = (polyB.size / polyA.size);
 
                                 let rCrossNA = (rxA * collision.normal.y) - (ryA * collision.normal.x);
                                 let rCrossNB = (rxB * collision.normal.y) - (ryB * collision.normal.x);
