@@ -116,7 +116,7 @@
 
             let polygons = [];
 
-            function createPoly(isPlayer, vertNum, size) {
+            function createPoly(isPlayer, vertNum, size, duplicate, pos) {
                 const points = [];
 
                 let spawnX;
@@ -125,6 +125,9 @@
                 if (isPlayer) {
                     spawnX = canvas.width / 2;
                     spawnY = canvas.height / 2;
+                } else if (pos) {
+                    spawnX = pos.x;
+                    spawnY = pos.y;
                 } else {
                     spawnX = rand(0, canvas.width);
                     spawnY = rand(0, canvas.height);
@@ -149,6 +152,8 @@
                     points.vy = 0;
                     points.rot = Math.PI * 1.5; // rotation in radians
                     points.av = 0; // angular velocity
+                    points.health = 100;
+                    points.hue = rand(0, 360);
                 } else {
                     points.vertNum = vertNum;
                     points.size = size;
@@ -157,6 +162,9 @@
                     points.rot = Math.PI * (rand(0, 20) / 10); // rotation in radians
                     points.av = 0; // angular velocity
                     points.speed = rand(1, 20) / 100;
+                    points.health = 100;
+                    points.hue = rand(0, 360);
+                    points.dup = duplicate;
                 }
                 
 
@@ -245,14 +253,14 @@
                 }; // collision
             }
 
-            function drawPolygon(vertices, color) {
+            function drawPolygon(poly) {
                 ctx.beginPath();
-                ctx.moveTo(vertices[0].x, vertices[0].y);
-                for (let i = 1; i < vertices.length; i++) {
-                    ctx.lineTo(vertices[i].x, vertices[i].y);
+                ctx.moveTo(poly[0].x, poly[0].y);
+                for (let i = 1; i < poly.length; i++) {
+                    ctx.lineTo(poly[i].x, poly[i].y);
                 }
                 ctx.closePath();
-                ctx.fillStyle = color;
+                ctx.fillStyle = "hsla(" + poly.hue + ", " + poly.health + "%, 50%, 1)";
                 ctx.fill();
             };
 
@@ -295,7 +303,7 @@
                 vertices.rot += angle;
             }
 
-            function getContactPoint(shapeA, shapeB, normal) {
+            function getContactPoint(shapeA, normal) {
                 // Find the vertex on shapeA that penetrates furthest into shapeB along the normal
                 let deepestVertex = shapeA[0];
                 let maxDist = -Infinity;
@@ -402,30 +410,42 @@
                             let slop = 0.5;
                             let correctionDepth = Math.max(0, collision.depth - slop);
 
-                            if (correctionDepth > 0) {
-                                let correctionX = collision.normal.x * correctionDepth * percent;
-                                let correctionY = collision.normal.y * correctionDepth * percent;
+                            let massA = polyA.size * polyA.size;
+                            let massB = polyB.size * polyB.size;
+                            let invMassA = 1 / massA;
+                            let invMassB = 1 / massB;
+
+                            let inertiaA = massA * polyA.size * polyA.size;
+                            let inertiaB = massB * polyB.size * polyB.size;
+                            let invInertiaA = 1 / (inertiaA * 0.1); 
+                            let invInertiaB = 1 / (inertiaB * 0.1);
+                            let totalInvMass = invMassA + invMassB;
+
+                            if (correctionDepth > 0 && totalInvMass > 0) {
+                                let correctionAdj = correctionDepth / totalInvMass;
+                                let correctionX = collision.normal.x * correctionAdj;
+                                let correctionY = collision.normal.y * correctionAdj;
 
                                 for (let v of polyA) {
-                                    v.x -= correctionX;
-                                    v.y -= correctionY;
+                                    v.x -= correctionX * invMassA;
+                                    v.y -= correctionY * invMassA;
                                 }
                                 for (let v of polyB) {
-                                    v.x += correctionX;
-                                    v.y += correctionY;
+                                    v.x += correctionX * invMassB;
+                                    v.y += correctionY * invMassB;
                                 }
 
                                 // add a little bounce to it
-                                polyA.vx -= correctionX * 10;
-                                polyA.vy -= correctionY * 10;
-                                polyB.vx += correctionX * 10;
-                                polyB.vy += correctionY * 10;
+                                polyA.vx -= correctionX * 5 * invMassA;
+                                polyA.vy -= correctionY * 5 * invMassA;
+                                polyB.vx += correctionX * 5 * invMassB;
+                                polyB.vy += correctionY * 5 * invMassB;
                             }
 
 
                             // find contact points for both shapes relative to the collision normal
-                            let contactA = getContactPoint(polyA, polyB, collision.normal);
-                            let contactB = getContactPoint(polyB, polyA, {x: -collision.normal.x, y: -collision.normal.y});
+                            let contactA = getContactPoint(polyA, collision.normal);
+                            let contactB = getContactPoint(polyB, collision.normal);
 
                             // the contact point is the midpoint between the interacting surface points
                             let contact = {
@@ -452,10 +472,6 @@
                                 if (Math.abs(normalVel) < 0.5) {
                                     restitution = 0;
                                 }
-                                let invInertiaA = 0.005;
-                                let invInertiaB = 0.005;
-                                let invMassA = (polyA.size / polyA.size);
-                                let invMassB = (polyB.size / polyA.size);
 
                                 let rCrossNA = (rxA * collision.normal.y) - (ryA * collision.normal.x);
                                 let rCrossNB = (rxB * collision.normal.y) - (ryB * collision.normal.x);
@@ -473,6 +489,22 @@
                                 polyB.vx -= (impulseScalar * collision.normal.x) * invMassB;
                                 polyB.vy -= (impulseScalar * collision.normal.y) * invMassB;
                                 polyB.av -= rCrossNB * impulseScalar * invInertiaB;
+                            }
+
+                            if (i == 0 && !polyB.dup) {
+                                let duplicate
+                                if (polyB.size < 60) {
+                                    duplicate = true;
+                                } else {
+                                    duplicate = false;
+                                }
+                                let duplicateVert = polyB.vertNum;
+                                let duplicateSize = polyB.size / 2;
+                                let duplicatePosA = {x: centerB.x - polyB.size / 2.2, y: centerB.y};
+                                let duplicatePosB = {x: centerB.x + polyB.size / 2.2, y: centerB.y};
+                                polygons.splice(n, 1);
+                                polygons.push(createPoly(false, duplicateVert, duplicateSize, duplicate, duplicatePosA));
+                                polygons.push(createPoly(false, duplicateVert, duplicateSize, duplicate, duplicatePosB));
                             }
                         }
                     }
@@ -497,12 +529,10 @@
                 ctx.translate(canvas.width / 2 - camera.x, canvas.height / 2 - camera.y);
                 
 
-                let color = 'rgba(150, 0, 0, 0.5)';
-
                 for (let i = 0; i < polygons.length; i++) {
-                    drawPolygon(polygons[i], color);
+                    drawPolygon(polygons[i]);
                 }
-                
+
 
                 ctx.restore();
             }
