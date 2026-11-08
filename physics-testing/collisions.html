@@ -295,21 +295,21 @@
                 vertices.rot += angle;
             }
 
-            function getContactPoint(polyA, normal) {
-                // Find the vertex on shapeA that is furthest into shapeB along the normal
-                let deepestVertex = polyA[0];
-                let minProjection = Infinity;
+            function getContactPoint(shapeA, shapeB, normal) {
+                // Find the vertex on shapeA that penetrates furthest into shapeB along the normal
+                let deepestVertex = shapeA[0];
+                let maxDist = -Infinity;
 
-                for (let v of polyA) {
-                    let projection = v.x * normal.x + v.y * normal.y;
-                    
-                    if (projection < minProjection) {
-                        minProjection = projection;
+                for (let i = 0; i < shapeA.length; i++) {
+                    let v = shapeA[i];
+                    // Project vertex along normal relative to shape B's center or position
+                    let dist = (v.x * normal.x) + (v.y * normal.y);
+                    if (dist > maxDist) {
+                        maxDist = dist;
                         deepestVertex = v;
                     }
                 }
-
-                return { x: deepestVertex.x, y: deepestVertex.y };
+                return deepestVertex;
             }
 
             let friction = 1;
@@ -361,19 +361,10 @@
                     }
 
                     if (poly.av !== 0) {
-                        rotatePolygon(poly, poly.av * deltaTimeMultiplier)
+                        rotatePolygon(poly, poly.av * deltaTime)
                     }
                 }
                 
-                // rotatePolygon(player, player.av);
-
-                // for (let i = 1; i < polygons.length; i++) {
-                //     polygons[i].vx += Math.cos(polygons[i].rot) * 0.1 * polygons[i].speed;
-                //     polygons[i].vy += Math.sin(polygons[i].rot) * 0.1 * polygons[i].speed;
-                //     polygons[i].vx *= friction;
-                //     polygons[i].vy *= friction;
-                // }
-                // console.log(polygons)
 
                 // update all polygon positions (including player)
                 for (let n = 0; n < polygons.length; n++) {
@@ -386,6 +377,7 @@
 
                 ctx.clearRect(0,0,canvas.width, canvas.height);
 
+                // collision reaction chain
                 for (let i = 0; i < polygons.length; i++) {
                     // check every combination minus the duplicates
                     for (let n = i + 1; n < polygons.length; n++) {
@@ -395,157 +387,88 @@
                             let polyA = polygons[i];
                             let polyB = polygons[n];
                             
-                            let percent = 0.5; // separation percentage
+                            let percent = 0.2; // separation percentage
+                            let slop = 0.5;
+                            let correctionDepth = Math.max(0, collision.depth - slop);
 
-                            // polyA.vx -= collision.normal.x * collision.depth;
-                            // polyA.vy -= collision.normal.y * collision.depth;
-                            // polyB.vx += collision.normal.x * collision.depth;
-                            // polyB.vy += collision.normal.y * collision.depth;
+                            if (correctionDepth > 0) {
+                                let correctionX = collision.normal.x * correctionDepth * percent;
+                                let correctionY = collision.normal.y * correctionDepth * percent;
 
-                            for (let v of polyA) {
-                                v.x -= collision.normal.x * collision.depth * percent;
-                                v.y -= collision.normal.y * collision.depth * percent;
+                                for (let v of polyA) {
+                                    v.x -= correctionX;
+                                    v.y -= correctionY;
+                                }
+                                for (let v of polyB) {
+                                    v.x += correctionX;
+                                    v.y += correctionY;
+                                }
+
+                                // add a little bounce to it
+                                polyA.vx -= correctionX * 10;
+                                polyA.vy -= correctionY * 10;
+                                polyB.vx += correctionX * 10;
+                                polyB.vy += correctionY * 10;
                             }
-                            for (let v of polyB) {
-                                v.x += collision.normal.x * collision.depth * percent;
-                                v.y += collision.normal.y * collision.depth * percent;
-                            }
+
+
                             let centerA = getCenter(polyA);
                             let centerB = getCenter(polyB);
-                            // get the contact points
-                            let contactA = getContactPoint(polyA, collision.normal);
-                            let contactB = getContactPoint(polyB, {x: -collision.normal.x, y: -collision.normal.y});
-                            // distance from the center of the shape to the collision point (r)
-                            let rxA = contactA.x - centerA.x;
-                            let ryA = contactA.y - centerA.y;
-                            let rxB = contactB.x - centerB.x;
-                            let ryB = contactB.y - centerB.y;
-                            // calculate the torque using cross product
-                            // use the collision normal as the force vector
-                            let torqueScale = 0.05;
-                            let tA = ((rxA * collision.normal.y) - (ryA * collision.normal.x)) * torqueScale;
-                            let tB = ((rxB * collision.normal.y) - (ryB * collision.normal.x)) * torqueScale;
 
-                            // update the angular velocities
-                            polyA.av += tA / 1;
-                            polyB.av -= tB / 1;
+                            // find contact points for both shapes relative to the collision normal
+                            let contactA = getContactPoint(polyA, polyB, collision.normal);
+                            let contactB = getContactPoint(polyB, polyA, {x: -collision.normal.x, y: -collision.normal.y});
 
-                            // console.log(contactB);
-                            // polyA.av += 
-                            // let polyA = polygons[i];
-                            // let polyB = polygons[n];
-                            
-                            // let percent = 0.2; // separation percentage
-                            // let slop = 0.5;
-                            // let correctionDepth = Math.max(0, collision.depth - slop);
+                            // the contact point is the midpoint between the interacting surface points
+                            let contact = {
+                                x: (contactA.x + contactB.x) / 2,
+                                y: (contactA.y + contactB.y) / 2
+                            };
 
-                            // if (correctionDepth > 0) {
-                            //     let correctionX = collision.normal.x * correctionDepth * percent;
-                            //     let correctionY = collision.normal.y * correctionDepth * percent;
+                            let rxA = contact.x - centerA.x;
+                            let ryA = contact.y - centerA.y;
+                            let rxB = contact.x - centerB.x;
+                            let ryB = contact.y - centerB.y;
 
-                            //     for (let v of polyA) {
-                            //         v.x -= correctionX;
-                            //         v.y -= correctionY;
-                            //     }
-                            //     for (let v of polyB) {
-                            //         v.x += correctionX;
-                            //         v.y += correctionY;
-                            //     }
-                            // }
+                            let contactVxA = polyA.vx - polyA.av * ryA;
+                            let contactVyA = polyA.vy + polyA.av * rxA;
+                            let contactVxB = polyB.vx - polyB.av * ryB;
+                            let contactVyB = polyB.vy + polyB.av * rxB;
 
+                            let relVelX = contactVxA - contactVxB;
+                            let relVelY = contactVyA - contactVyB;
+                            let normalVel = relVelX * collision.normal.x + relVelY * collision.normal.y;
 
-                            // let centerA = getCenter(polyA);
-                            // let centerB = getCenter(polyB);
+                            if (normalVel > 0) {
+                                let restitution = 0.3;
+                                if (Math.abs(normalVel) < 0.5) {
+                                    restitution = 0;
+                                }
+                                let invInertiaA = 0.005;
+                                let invInertiaB = 0.005;
+                                let invMassA = (polyA.size * polyA.size);
+                                let invMassB = (polyB.size * polyA.size);
 
-                            // // Correctly find contact points for both shapes relative to the collision normal
-                            // let contactA = getContactPoint(polyA, polyB, collision.normal);
-                            // let contactB = getContactPoint(polyB, polyA, {x: -collision.normal.x, y: -collision.normal.y});
+                                let rCrossNA = (rxA * collision.normal.y) - (ryA * collision.normal.x);
+                                let rCrossNB = (rxB * collision.normal.y) - (ryB * collision.normal.x);
 
-                            // // The true contact point is the midpoint between the interacting surface points
-                            // let contact = {
-                            //     x: (contactA.x + contactB.x) / 2,
-                            //     y: (contactA.y + contactB.y) / 2
-                            // };
+                                let denom = invMassA + invMassB + (rCrossNA * rCrossNA) * invInertiaA + (rCrossNB * rCrossNB) * invInertiaB;
 
-                            // let rxA = contact.x - centerA.x;
-                            // let ryA = contact.y - centerA.y;
-                            // let rxB = contact.x - centerB.x;
-                            // let ryB = contact.y - centerB.y;
+                                let impulseScalar = -(1 + restitution) * normalVel / denom;
 
-                            // let contactVxA = polyA.vx - polyA.av * ryA;
-                            // let contactVyA = polyA.vy + polyA.av * rxA;
-                            // let contactVxB = polyB.vx - polyB.av * ryB;
-                            // let contactVyB = polyB.vy + polyB.av * rxB;
-
-                            // let relVelX = contactVxA - contactVxB;
-                            // let relVelY = contactVyA - contactVyB;
-                            // let normalVel = relVelX * collision.normal.x + relVelY * collision.normal.y;
-
-                            // if (normalVel > 0) {
-                            //     let restitution = 0.3;
-                            //     if (Math.abs(normalVel) < 0.5) {
-                            //         restitution = 0;
-                            //     }
-                            //     let invInertiaA = 0.005;
-                            //     let invInertiaB = 0.005;
-                            //     let invMassA = 1;
-                            //     let invMassB = 1;
-
-                            //     let rCrossNA = (rxA * collision.normal.y) - (ryA * collision.normal.x);
-                            //     let rCrossNB = (rxB * collision.normal.y) - (ryB * collision.normal.x);
-
-                            //     let denom = invMassA + invMassB + (rCrossNA * rCrossNA) * invInertiaA + (rCrossNB * rCrossNB) * invInertiaB;
-
-                            //     let impulseScalar = -(1 + restitution) * normalVel / denom;
-
-                            //     // apply to poly A
-                            //     polyA.vx += (impulseScalar * collision.normal.x) * invMassA;
-                            //     polyA.vy += (impulseScalar * collision.normal.y) * invMassA;
-                            //     polyA.av += rCrossNA * impulseScalar * invInertiaA;
+                                // apply to poly A
+                                polyA.vx += (impulseScalar * collision.normal.x) * invMassA;
+                                polyA.vy += (impulseScalar * collision.normal.y) * invMassA;
+                                polyA.av += rCrossNA * impulseScalar * invInertiaA;
                                 
-                            //     // apply to poly B
-                            //     polyB.vx -= (impulseScalar * collision.normal.x) * invMassB;
-                            //     polyB.vy -= (impulseScalar * collision.normal.y) * invMassB;
-                            //     polyB.av -= rCrossNB * impulseScalar * invInertiaB;
-                            // }
+                                // apply to poly B
+                                polyB.vx -= (impulseScalar * collision.normal.x) * invMassB;
+                                polyB.vy -= (impulseScalar * collision.normal.y) * invMassB;
+                                polyB.av -= rCrossNB * impulseScalar * invInertiaB;
+                            }
                         }
                     }
                 }
-
-                // let collision = checkCollision(polygons[0], polygons[1]);
-
-                // if (collision.colliding) {
-                //     for (let i = 0; i < player.length; i++) {
-                //         player[i].x -= collision.normal.x * collision.depth;
-                //         player[i].y -= collision.normal.y * collision.depth;
-                //     }
-
-                //     let center = getCenter(player);
-                //     let contact = getContactPoint(player, collision.normal);
-
-                //     let rx = contact.x - center.x;
-                //     let ry = contact.y - center.y;
-
-                //     let contactVx = player.vx - player.av * ry;
-                //     let contactVy = player.vy + player.av * rx;
-
-                //     let normalVel = contactVx * collision.normal.x + contactVy * collision.normal.y;
-
-                //     if (normalVel > 0) {
-                //         let restitution = 0.3;
-                //         let invInertia = 0.0005;
-
-                //         let rCrossN = (rx * collision.normal.y) - (ry * collision.normal.x);
-
-                //         let impulseScalar = -(1 + restitution) * normalVel / (1 + (rCrossN * rCrossN) * invInertia);
-
-                //         player.vx += impulseScalar * collision.normal.x;
-                //         player.vy += impulseScalar * collision.normal.y;
-                //         player.av += rCrossN * impulseScalar * invInertia;
-                //     }
-                // }
-
-                
 
 
                 // CAMERA
