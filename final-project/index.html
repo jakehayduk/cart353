@@ -349,6 +349,7 @@
             let camera = {
                 x: canvas.width,
                 y: canvas.height,
+                scaleLerp: 0.5,
                 init: false
             }
 
@@ -557,6 +558,18 @@
                 // CAMERA
 
                 let playerCenter = getCenter(player);
+                let avgCanvas = (canvas.width + canvas.height) / 2;
+                let maxDist = 0;
+                for (let i = 1; i < polygons.length; i++) {
+                    let distance = Math.abs(Math.abs(playerCenter.x) - Math.abs(getCenter(polygons[i]).x)) + Math.abs(Math.abs(playerCenter.y) - Math.abs(getCenter(polygons[i]).y));
+                    if (distance < avgCanvas) {
+                        if (maxDist < distance) {
+                            maxDist = distance;
+                        }
+                    }
+                }
+
+                
 
                 if (!camera.init) {
                     camera.x = playerCenter.x;
@@ -570,8 +583,17 @@
                 ctx.save();
 
                 ctx.translate(canvas.width / 2, canvas.height / 2);
+
+                let scale = Math.min((avgCanvas / maxDist), 1.7);
                 
-                ctx.scale(1, 1);
+                // when all shapes are out of frame
+                if (maxDist < 1) {
+                    scale = 1.7;
+                }
+                
+                camera.scaleLerp = lerp(camera.scaleLerp, scale, 0.005);
+                
+                ctx.scale(camera.scaleLerp, camera.scaleLerp);
                 
                 ctx.translate(-camera.x, -camera.y);
 
