@@ -392,16 +392,34 @@
                     }
 
                     if (poly.av !== 0) {
-                        rotatePolygon(poly, poly.av * deltaTime)
+                        rotatePolygon(poly, poly.av * deltaTime);
                     }
                 }
                 
-
+                let playerCenter = getCenter(player);
                 // update all polygon positions (including player)
                 for (let n = 0; n < polygons.length; n++) {
                     for (let i = 0; i < polygons[n].length; i++) {
                         polygons[n][i].y = polygons[n][i].y + polygons[n].vy * deltaTime;
                         polygons[n][i].x = polygons[n][i].x + polygons[n].vx * deltaTime;
+                    }
+                    if (n > 0) {
+                        let polyCenter = getCenter(polygons[n]);
+                        let distance = Math.abs(Math.abs(playerCenter.x) - Math.abs(polyCenter.x)) + Math.abs(Math.abs(playerCenter.y) - Math.abs(polyCenter.y));
+
+                        if (distance < 300) {
+                            let angleToPlayer = Math.atan2(playerCenter.y - polyCenter.y, playerCenter.x - polyCenter.x);
+
+                            let angleDiff = Math.atan2(Math.sin(angleToPlayer - polygons[n].rot), Math.cos(angleToPlayer - polygons[n].rot));
+
+                            polygons[n].av += angleDiff * 0.005;
+
+                            polygons[n].av *= 0.85; 
+
+                            polygons[n].rot += polygons[n].av;
+                            
+                            rotatePolygon(polygons[n], polygons[n].av);
+                        }
                     }
                 }
                 
@@ -557,7 +575,6 @@
 
                 // CAMERA
 
-                let playerCenter = getCenter(player);
                 let avgCanvas = (canvas.width + canvas.height) / 2;
                 let maxDist = 0;
                 for (let i = 1; i < polygons.length; i++) {
