@@ -420,9 +420,16 @@
                             polygons[n].rot += polygons[n].av;
                             
                             rotatePolygon(polygons[n], polygons[n].av);
-
-                            polygons[n].vx += Math.cos(polygons[n].rot) * 0.5 * polygons[n].speed;
-                            polygons[n].vy += Math.sin(polygons[n].rot) * 0.5 * polygons[n].speed;
+                            let attraction = 1;
+                            if (polygons[n].size < player.size / 2) {
+                                attraction = Math.max((10 - (distance / 100)) / 4, 1);
+                                polygons[n].vx += Math.cos(polygons[n].rot) * 0.1 * attraction;
+                                polygons[n].vy += Math.sin(polygons[n].rot) * 0.1 * attraction;
+                            } else {
+                                polygons[n].vx += Math.cos(polygons[n].rot) * 0.5 * polygons[n].speed;
+                                polygons[n].vy += Math.sin(polygons[n].rot) * 0.5 * polygons[n].speed;
+                            }
+                            
                         }
 
                         else {
@@ -475,20 +482,26 @@
                                 let correctionX = collision.normal.x * correctionAdj;
                                 let correctionY = collision.normal.y * correctionAdj;
 
-                                for (let v of polyA) {
-                                    v.x -= correctionX * invMassA;
-                                    v.y -= correctionY * invMassA;
-                                }
-                                for (let v of polyB) {
-                                    v.x += correctionX * invMassB;
-                                    v.y += correctionY * invMassB;
-                                }
+                                // absorb shapes if they are half the size of the player
+                                if (i == 0 && polyB.size < polyA.size / 2) {
 
-                                // add a little bounce to it
-                                polyA.vx -= correctionX * 5 * invMassA;
-                                polyA.vy -= correctionY * 5 * invMassA;
-                                polyB.vx += correctionX * 5 * invMassB;
-                                polyB.vy += correctionY * 5 * invMassB;
+                                } else {
+                                    for (let v of polyA) {
+                                        v.x -= correctionX * invMassA;
+                                        v.y -= correctionY * invMassA;
+                                    }
+                                    for (let v of polyB) {
+                                        v.x += correctionX * invMassB;
+                                        v.y += correctionY * invMassB;
+                                    }
+
+                                    // add a little bounce to it
+                                    polyA.vx -= correctionX * 5 * invMassA;
+                                    polyA.vy -= correctionY * 5 * invMassA;
+                                    polyB.vx += correctionX * 5 * invMassB;
+                                    polyB.vy += correctionY * 5 * invMassB;
+                                }
+                                
                             }
 
 
@@ -529,15 +542,23 @@
 
                                 let impulseScalar = -(1 + restitution) * normalVel / denom;
 
-                                // apply to poly A
-                                polyA.vx += (impulseScalar * collision.normal.x) * invMassA;
-                                polyA.vy += (impulseScalar * collision.normal.y) * invMassA;
-                                polyA.av += rCrossNA * impulseScalar * invInertiaA;
-                            
-                                // apply to poly B
-                                polyB.vx -= (impulseScalar * collision.normal.x) * invMassB;
-                                polyB.vy -= (impulseScalar * collision.normal.y) * invMassB;
-                                polyB.av -= rCrossNB * impulseScalar * invInertiaB;
+                                // absorb shapes if they are half the size of the player
+                                if (i == 0 && polyB.size < polyA.size / 2) {
+                                    if (dx < polyA.size / 5 || dy < polyA.size / 5) {
+                                        polygons.splice(n, 1);
+                                    }
+                                } else {
+                                    // apply to poly A
+                                    polyA.vx += (impulseScalar * collision.normal.x) * invMassA;
+                                    polyA.vy += (impulseScalar * collision.normal.y) * invMassA;
+                                    polyA.av += rCrossNA * impulseScalar * invInertiaA;
+                                
+                                    // apply to poly B
+                                    polyB.vx -= (impulseScalar * collision.normal.x) * invMassB;
+                                    polyB.vy -= (impulseScalar * collision.normal.y) * invMassB;
+                                    polyB.av -= rCrossNB * impulseScalar * invInertiaB;
+                                }
+                                
                                 
 
                                 if (i == 0 && impulseScalar < -700) {
@@ -622,9 +643,11 @@
                 
                 ctx.translate(-camera.x, -camera.y);
 
-                for (let i = 0; i < polygons.length; i++) {
+                for (let i = 1; i < polygons.length; i++) {
                     drawPolygon(polygons[i]);
                 }
+                // draw the player after so it appears on top
+                drawPolygon(polygons[0]);
 
                 // health bars
                 for (let i = 0; i < polygons.length; i++) {
