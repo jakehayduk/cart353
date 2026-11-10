@@ -187,6 +187,7 @@
                     points.hue = hue ? hue : rand(0, 360);
                     points.dup = duplicate;
                     points.attacked = 0;
+                    points.sightRadius = 300 + size * 2;
                 }
                 
 
@@ -407,7 +408,7 @@
                         let polyCenter = getCenter(polygons[n]);
                         let distance = Math.abs(Math.abs(playerCenter.x) - Math.abs(polyCenter.x)) + Math.abs(Math.abs(playerCenter.y) - Math.abs(polyCenter.y));
 
-                        if (distance < 300) {
+                        if (distance < polygons[n].sightRadius) {
                             let angleToPlayer = Math.atan2(playerCenter.y - polyCenter.y, playerCenter.x - polyCenter.x);
 
                             let angleDiff = Math.atan2(Math.sin(angleToPlayer - polygons[n].rot), Math.cos(angleToPlayer - polygons[n].rot));
@@ -419,6 +420,13 @@
                             polygons[n].rot += polygons[n].av;
                             
                             rotatePolygon(polygons[n], polygons[n].av);
+
+                            polygons[n].vx += Math.cos(polygons[n].rot) * 0.5 * polygons[n].speed;
+                            polygons[n].vy += Math.sin(polygons[n].rot) * 0.5 * polygons[n].speed;
+                        }
+
+                        else {
+
                         }
                     }
                 }
