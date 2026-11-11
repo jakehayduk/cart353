@@ -150,8 +150,17 @@
                     spawnX = pos.x;
                     spawnY = pos.y;
                 } else {
-                    spawnX = rand(0, canvas.width);
-                    spawnY = rand(0, canvas.height);
+                    let playerCenterX = getCenter(player).x;
+                    let playerCenterY = getCenter(player).y;
+                    let spawnRadius = ((canvas.width + canvas.height) / 2) * 3;
+                    let noSpawnRadius = (canvas.width + canvas.height) / 2;
+                    spawnX = playerCenterX + rand(0, spawnRadius) - rand(0, spawnRadius);
+                    spawnY = playerCenterY + rand(0, spawnRadius) - rand(0, spawnRadius);
+                    while (spawnX > playerCenterX - noSpawnRadius && spawnX < playerCenterX + noSpawnRadius || spawnY > playerCenterY - noSpawnRadius && spawnY < playerCenterY + noSpawnRadius) {
+                        spawnX = playerCenterX + rand(0, spawnRadius) - rand(0, spawnRadius);
+                        spawnY = playerCenterY + rand(0, spawnRadius) - rand(0, spawnRadius);
+                    }
+                    // spawns the shape within a radius, but not in a closer radius to the player
                 }
 
                 for (let i = 0; i < vertNum; i++) {
@@ -199,8 +208,9 @@
             let player = polygons[0];
 
             polygons.push(createPoly(false, 5, 100));
-            polygons.push(createPoly(false, 4, 50));
-            polygons.push(createPoly(false, 7, 30));
+            // polygons.push(createPoly(false, 4, 50));
+            // polygons.push(createPoly(false, 7, 30));
+
 
             // SAT
 
@@ -437,6 +447,8 @@
                         }
                     }
                 }
+
+
                 
 
                 ctx.clearRect(0,0,canvas.width, canvas.height);
@@ -496,10 +508,10 @@
                                     }
 
                                     // add a little bounce to it
-                                    polyA.vx -= correctionX * 5 * invMassA;
-                                    polyA.vy -= correctionY * 5 * invMassA;
-                                    polyB.vx += correctionX * 5 * invMassB;
-                                    polyB.vy += correctionY * 5 * invMassB;
+                                    polyA.vx -= correctionX * 2 * invMassA * friction;
+                                    polyA.vy -= correctionY * 2 * invMassA * friction;
+                                    polyB.vx += correctionX * 2 * invMassB * friction;
+                                    polyB.vy += correctionY * 2 * invMassB * friction;
                                 }
                                 
                             }
@@ -549,14 +561,14 @@
                                     }
                                 } else {
                                     // apply to poly A
-                                    polyA.vx += (impulseScalar * collision.normal.x) * invMassA;
-                                    polyA.vy += (impulseScalar * collision.normal.y) * invMassA;
-                                    polyA.av += rCrossNA * impulseScalar * invInertiaA;
+                                    polyA.vx += (impulseScalar * collision.normal.x) * invMassA * friction;
+                                    polyA.vy += (impulseScalar * collision.normal.y) * invMassA * friction;
+                                    polyA.av += rCrossNA * impulseScalar * invInertiaA * friction;
                                 
                                     // apply to poly B
-                                    polyB.vx -= (impulseScalar * collision.normal.x) * invMassB;
-                                    polyB.vy -= (impulseScalar * collision.normal.y) * invMassB;
-                                    polyB.av -= rCrossNB * impulseScalar * invInertiaB;
+                                    polyB.vx -= (impulseScalar * collision.normal.x) * invMassB * friction;
+                                    polyB.vy -= (impulseScalar * collision.normal.y) * invMassB * friction;
+                                    polyB.av -= rCrossNB * impulseScalar * invInertiaB * friction;
                                 }
                                 
                                 
