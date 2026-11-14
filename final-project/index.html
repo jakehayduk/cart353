@@ -58,6 +58,13 @@
 
             const rand = (min, max) => Math.random() * (max - min) + min;
             const lerp = (a, b, t) => a * (1 - t) + b * t;
+            
+            function dist(obj1, obj2) {
+                const dx = obj2.x - obj1.x;
+                const dy = obj2.y - obj1.y;
+
+                return Math.hypot(dx, dy);
+            }
 
             let particles = [];
 
@@ -136,7 +143,7 @@
             ]
 
             let polygons = [];
-
+            
             function createPoly(isPlayer, vertNum, size, duplicate, pos, hue, vel) {
                 const points = [];
 
@@ -150,16 +157,43 @@
                     spawnX = pos.x;
                     spawnY = pos.y;
                 } else {
-                    let playerCenterX = getCenter(player).x;
-                    let playerCenterY = getCenter(player).y;
-                    let spawnRadius = ((canvas.width + canvas.height) / 2) * 3;
+                    let playerCenter = getCenter(player);
+                    let spawnRadius = ((canvas.width + canvas.height) / 2) * 2;
                     let noSpawnRadius = (canvas.width + canvas.height) / 2;
-                    spawnX = playerCenterX + rand(0, spawnRadius) - rand(0, spawnRadius);
-                    spawnY = playerCenterY + rand(0, spawnRadius) - rand(0, spawnRadius);
-                    while (spawnX > playerCenterX - noSpawnRadius && spawnX < playerCenterX + noSpawnRadius || spawnY > playerCenterY - noSpawnRadius && spawnY < playerCenterY + noSpawnRadius) {
-                        spawnX = playerCenterX + rand(0, spawnRadius) - rand(0, spawnRadius);
-                        spawnY = playerCenterY + rand(0, spawnRadius) - rand(0, spawnRadius);
+
+                    let validSpawn = false;
+                    
+                    while (!validSpawn) {
+                        // random coords
+                        spawnX = playerCenter.x + rand(0, spawnRadius) - rand(0, spawnRadius);
+                        spawnY = playerCenter.y + rand(0, spawnRadius) - rand(0, spawnRadius);
+                        let nSpawn = {x: spawnX, y: spawnY};
+                        
+                        // check distance from player outside noSpawnRadius
+                        let distToPlayer = dist(nSpawn, playerCenter);
+                        if (distToPlayer < noSpawnRadius) {
+                            continue;
+                        }
+
+                        // check against all other polygons
+                        let nearCollision = false;
+                        for (let n = 0; n < polygons.length; n++) {
+                            let nCenter = getCenter(polygons[n]);
+                            let nDist = dist(nSpawn, nCenter);
+                            
+                            if (nDist < polygons[n].size + size) {
+                                nearCollision = true;
+                                break;
+                            }
+                        }
+
+                        // found an empty space to spawn the object
+                        if (!nearCollision) {
+                            validSpawn = true;
+                        }
+
                     }
+                    
                     // spawns the shape within a radius, but not in a closer radius to the player
                 }
 
@@ -207,9 +241,9 @@
             // create the player shape and use this shorthand for accessing the player node easily
             let player = polygons[0];
 
-            polygons.push(createPoly(false, 5, 100));
-            // polygons.push(createPoly(false, 4, 50));
-            // polygons.push(createPoly(false, 7, 30));
+            for (let i = 0; i < 30; i++) {
+                polygons.push(createPoly(false, rand(4, 14), rand(20, 200)));
+            }
 
 
             // SAT
@@ -447,8 +481,6 @@
                         }
                     }
                 }
-
-
                 
 
                 ctx.clearRect(0,0,canvas.width, canvas.height);
@@ -651,7 +683,8 @@
                 
                 camera.scaleLerp = lerp(camera.scaleLerp, scale, 0.005);
                 
-                ctx.scale(camera.scaleLerp, camera.scaleLerp);
+                // ctx.scale(camera.scaleLerp, camera.scaleLerp);
+                ctx.scale(0.2, 0.2);
                 
                 ctx.translate(-camera.x, -camera.y);
 
