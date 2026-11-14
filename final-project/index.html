@@ -158,8 +158,8 @@
                     spawnY = pos.y;
                 } else {
                     let playerCenter = getCenter(player);
-                    let spawnRadius = ((canvas.width + canvas.height) / 2) * 2;
-                    let noSpawnRadius = (canvas.width + canvas.height) / 2;
+                    let spawnRadius = 5000;
+                    let noSpawnRadius = 1200;
 
                     let validSpawn = false;
                     
@@ -241,9 +241,9 @@
             // create the player shape and use this shorthand for accessing the player node easily
             let player = polygons[0];
 
-            for (let i = 0; i < 30; i++) {
-                polygons.push(createPoly(false, rand(4, 14), rand(20, 200)));
-            }
+            // for (let i = 0; i < 300; i++) {
+            //     polygons.push(createPoly(false, rand(4, 14), rand(20, 200)));
+            // }
 
 
             // SAT
@@ -395,10 +395,15 @@
                 x: canvas.width,
                 y: canvas.height,
                 scaleLerp: 0.5,
-                init: false
+                init: false,
+                scale: false
             }
 
             function draw(deltaTime) {
+                if (polygons.length < 100) {
+                    polygons.push(createPoly(false, rand(4, 14), rand(20, 200)));
+                }
+
                 if (!deltaTime) { deltaTime = 1; }
 
                 friction = 0.98 - deltaTime / 50;
@@ -683,8 +688,8 @@
                 
                 camera.scaleLerp = lerp(camera.scaleLerp, scale, 0.005);
                 
-                // ctx.scale(camera.scaleLerp, camera.scaleLerp);
-                ctx.scale(0.2, 0.2);
+                ctx.scale(camera.scaleLerp, camera.scaleLerp);
+                // ctx.scale(0.2, 0.2);
                 
                 ctx.translate(-camera.x, -camera.y);
 
