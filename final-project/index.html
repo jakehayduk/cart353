@@ -455,7 +455,7 @@
                     }
                     if (n > 0) {
                         let polyCenter = getCenter(polygons[n]);
-                        let distance = Math.abs(Math.abs(playerCenter.x) - Math.abs(polyCenter.x)) + Math.abs(Math.abs(playerCenter.y) - Math.abs(polyCenter.y));
+                        let distance = dist(polyCenter, playerCenter);
 
                         if (distance < polygons[n].sightRadius) {
                             let angleToPlayer = Math.atan2(playerCenter.y - polyCenter.y, playerCenter.x - polyCenter.x);
@@ -658,10 +658,11 @@
 
                 // CAMERA
 
-                let avgCanvas = (canvas.width + canvas.height) / 2;
+                let avgCanvas = (canvas.width + canvas.height) / 3;
                 let maxDist = 0;
                 for (let i = 1; i < polygons.length; i++) {
-                    let distance = Math.abs(Math.abs(playerCenter.x) - Math.abs(getCenter(polygons[i]).x)) + Math.abs(Math.abs(playerCenter.y) - Math.abs(getCenter(polygons[i]).y));
+                    let polyCenter = getCenter(polygons[i]);
+                    let distance = dist(polyCenter, playerCenter);
                     if (distance < avgCanvas) {
                         if (maxDist < distance) {
                             maxDist = distance;
@@ -691,7 +692,7 @@
                     scale = 1.7;
                 }
                 
-                camera.scaleLerp = lerp(camera.scaleLerp, scale, 0.005);
+                camera.scaleLerp = lerp(camera.scaleLerp, scale, 0.003);
                 
                 ctx.scale(camera.scaleLerp, camera.scaleLerp);
                 // ctx.scale(0.1, 0.1);
@@ -725,6 +726,13 @@
 
 
                 ctx.restore();
+
+                ctx.fillStyle = "hsla(0, 100%, 50%)";
+                ctx.fillRect(30, canvas.height - 60 , 200, 30);
+
+                ctx.strokeStyle = "hsla(30, 100%, 80%)";
+                ctx.lineWidth = 4;
+                ctx.strokeRect(30, canvas.height - 60 , 200, 30);
             }
 
             let frameCount = 0;
