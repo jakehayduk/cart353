@@ -143,7 +143,7 @@
             ]
 
             let polygons = [];
-            
+            let spawnRadius = 5000;
             function createPoly(isPlayer, vertNum, size, duplicate, pos, hue, vel) {
                 const points = [];
 
@@ -158,7 +158,7 @@
                     spawnY = pos.y;
                 } else {
                     let playerCenter = getCenter(player);
-                    let spawnRadius = 5000;
+                    
                     let noSpawnRadius = 1200;
 
                     let validSpawn = false;
@@ -484,6 +484,10 @@
                         else {
 
                         }
+
+                        if (dist(polyCenter, playerCenter) > spawnRadius) {
+                            polygons.splice(n, 1);
+                        }
                     }
                 }
                 
@@ -688,8 +692,8 @@
                 
                 camera.scaleLerp = lerp(camera.scaleLerp, scale, 0.005);
                 
-                ctx.scale(camera.scaleLerp, camera.scaleLerp);
-                // ctx.scale(0.2, 0.2);
+                // ctx.scale(camera.scaleLerp, camera.scaleLerp);
+                ctx.scale(0.1, 0.1);
                 
                 ctx.translate(-camera.x, -camera.y);
 
