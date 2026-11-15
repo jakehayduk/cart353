@@ -485,6 +485,7 @@
 
                         }
 
+                        // remove far away polygons (new ones will automatically spawn)
                         if (dist(polyCenter, playerCenter) > spawnRadius) {
                             polygons.splice(n, 1);
                         }
@@ -692,13 +693,17 @@
                 
                 camera.scaleLerp = lerp(camera.scaleLerp, scale, 0.005);
                 
-                // ctx.scale(camera.scaleLerp, camera.scaleLerp);
-                ctx.scale(0.1, 0.1);
+                ctx.scale(camera.scaleLerp, camera.scaleLerp);
+                // ctx.scale(0.1, 0.1);
                 
                 ctx.translate(-camera.x, -camera.y);
 
                 for (let i = 1; i < polygons.length; i++) {
-                    drawPolygon(polygons[i]);
+                    // only draw objects that are on screen
+                    let polyCenter = getCenter(polygons[i]);
+                    if (Math.abs(polyCenter.x - camera.x) < canvas.width / scale / 1.5 + polygons[i].size && Math.abs(polyCenter.y - camera.y) < canvas.height / scale / 1.5 + polygons[i].size) {
+                        drawPolygon(polygons[i]);
+                    }                    
                 }
                 // draw the player after so it appears on top
                 drawPolygon(polygons[0]);
