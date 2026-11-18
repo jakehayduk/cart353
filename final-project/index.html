@@ -695,7 +695,7 @@
                 camera.scaleLerp = lerp(camera.scaleLerp, scale, 0.003);
                 
                 ctx.scale(camera.scaleLerp, camera.scaleLerp);
-                // ctx.scale(0.1, 0.1);
+                // ctx.scale(0.3, 0.3);
                 
                 ctx.translate(-camera.x, -camera.y);
 
@@ -721,6 +721,9 @@
                         let center = getCenter(polygons[i]);
                         ctx.fillStyle = "hsla(0, 100%, 50%, " + polygons[i].attacked / 100 + ")"; // Set the fill color
                         ctx.fillRect(center.x - polygons[i].health / 2, center.y + polygons[i].size + 10, polygons[i].health, 15);
+                        if (polygons[i].health <= 0) {
+                            polygons.splice(i, 1);
+                        }
                     }
                 }
 
