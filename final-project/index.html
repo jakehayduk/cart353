@@ -321,6 +321,7 @@
             }
 
             function drawPolygon(poly) {
+                ctx.save();
                 ctx.beginPath();
                 ctx.moveTo(poly[0].x, poly[0].y);
                 for (let i = 1; i < poly.length; i++) {
@@ -329,6 +330,13 @@
                 ctx.closePath();
                 ctx.fillStyle = "hsla(" + poly.hue + ", " + poly.health + "%, 50%, 1)";
                 ctx.fill();
+
+                ctx.clip();
+                
+                ctx.strokeStyle = "hsla(" + poly.hue + ", " + poly.health + "%, 30%, 1)"
+                ctx.lineWidth = Math.max(10, poly.size / 5);
+                ctx.stroke();
+                ctx.restore();
             };
 
             function getCenter(vertices) {
@@ -721,6 +729,11 @@
                         let center = getCenter(polygons[i]);
                         ctx.fillStyle = "hsla(0, 100%, 50%, " + polygons[i].attacked / 100 + ")"; // Set the fill color
                         ctx.fillRect(center.x - polygons[i].health / 2, center.y + polygons[i].size + 10, polygons[i].health, 15);
+
+                        ctx.strokeStyle = "hsla(0, 100%, 30%, " + polygons[i].attacked / 100 + ")"; // Set the fill color
+                        ctx.lineWidth = 5;
+                        ctx.strokeRect(center.x - polygons[i].health / 2, center.y + polygons[i].size + 10, polygons[i].health, 15);
+
                         if (polygons[i].health <= 0) {
                             polygons.splice(i, 1);
                         }
@@ -730,12 +743,13 @@
 
                 ctx.restore();
 
+                // player health bar
                 ctx.fillStyle = "hsla(0, 100%, 50%)";
-                ctx.fillRect(30, canvas.height - 60 , 200, 30);
+                ctx.fillRect(30, canvas.height - 60 , player.health * 3, 30);
 
-                ctx.strokeStyle = "hsla(30, 100%, 80%)";
-                ctx.lineWidth = 4;
-                ctx.strokeRect(30, canvas.height - 60 , 200, 30);
+                ctx.strokeStyle = "hsla(0, 100%, 30%)";
+                ctx.lineWidth = 5;
+                ctx.strokeRect(30, canvas.height - 60 , 300, 30);
             }
 
             let frameCount = 0;
