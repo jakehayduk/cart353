@@ -234,9 +234,9 @@
                     points.attacked = 0;
                     points.sightRadius = points.speedDemon ? 1500 : 200 + size * 2 + rand(0, 200);
                     points.foresight = rand(0, 10);
-                    points.decisionTime = rand(50, 1000);
+                    points.decisionTime = rand(50, 2000);
                     points.decisiveness = rand(1, 20) * points.speed;
-                    points.decisiionTrigger = 0;
+                    points.decision = 0;
                     points.decisionAngle = 0;
                 }
                 
@@ -499,9 +499,9 @@
                         }
 
                         else {
-                            polygons[n].decisiionTrigger ++;
-                            if (polygons[n].decisiionTrigger >= polygons[n].decisionTime) {
-                                polygons[n].decisiionTrigger = 0;
+                            polygons[n].decisionTrigger ++;
+                            if (polygons[n].decisionTrigger >= polygons[n].decisionTime) {
+                                polygons[n].decisionTrigger = 0;
                                 polygons[n].decisionAngle = polygons[n].rot + (((rand(0, 360) - 180) * Math.PI) / 180) * (polygons[n].decisiveness);
                             }
 
